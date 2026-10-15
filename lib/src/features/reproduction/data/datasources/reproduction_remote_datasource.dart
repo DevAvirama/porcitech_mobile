@@ -1,0 +1,74 @@
+import '../../../../core/constants/api_constants.dart';
+import '../../../../core/errors/exceptions.dart';
+import '../../../../core/network/dio_client.dart';
+import '../../domain/entities/reproduction_event_entity.dart';
+
+abstract class ReproductionRemoteDataSource {
+  Future<ReproductionEventEntity> registrarParto({
+    required int porcinoId,
+    required DateTime fecha,
+    required int nacidosVivos,
+    required int nacidosMuertos,
+    required int momias,
+    required double pesoTotalCamadaKg,
+    int numeroParto = 1,
+    String? observaciones,
+  });
+}
+
+class ReproductionRemoteDataSourceImpl implements ReproductionRemoteDataSource {
+  final DioClient _client;
+
+  ReproductionRemoteDataSourceImpl(this._client);
+
+  @override
+  Future<ReproductionEventEntity> registrarParto({
+    required int porcinoId,
+    required DateTime fecha,
+    required int nacidosVivos,
+    required int nacidosMuertos,
+    required int momias,
+    required double pesoTotalCamadaKg,
+    int numeroParto = 1,
+    String? observaciones,
+  }) async {
+    try {
+      final payload = {
+        'porcino': porcinoId,
+        'tipo': 'parto',
+        'fecha': fecha.toIso8601String().split('T').first,
+        'numero_lechones': nacidosVivos,
+        'nacidos_vivos': nacidosVivos,
+        'nacidos_muertos': nacidosMuertos,
+        'momias': momias,
+        'peso_total_camada': pesoTotalCamadaKg,
+        'numero_parto': numeroParto,
+        'observaciones': observaciones ?? 'Parto atendido en maternidad',
+      };
+
+      final response = await _client.post(
+        ApiConstants.eventosReproductivos,
+        data: payload,
+      );
+
+      final data = response.data;
+      final int id = (data is Map<String, dynamic>) ? (data['id'] as int? ?? 1) : 1;
+
+      return ReproductionEventEntity(
+        id: id,
+        porcinoId: porcinoId,
+        fecha: fecha,
+        nacidosVivos: nacidosVivos,
+        nacidosMuertos: nacidosMuertos,
+        momias: momias,
+        pesoTotalCamadaKg: pesoTotalCamadaKg,
+        numeroParto: numeroParto,
+        observaciones: observaciones,
+      );
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+}
