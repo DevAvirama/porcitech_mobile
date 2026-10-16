@@ -23,7 +23,18 @@ class DashboardRepositoryImpl implements DashboardRepository {
     if (cacheService.isOfflineModeEnabled()) {
       final cachedJson = cacheService.getCachedJson(cacheService.keyCachedDashboard);
       if (cachedJson != null && cachedJson is Map<String, dynamic>) {
-        return Right(DashboardSummaryModel.fromJson(cachedJson, pendingSync: pendingCount));
+        final cachedModel = DashboardSummaryModel.fromJson(cachedJson);
+        return Right(
+          DashboardSummaryModel(
+            totalPorcinos: cachedModel.totalPorcinos,
+            alertasSanitarias: cachedModel.alertasSanitarias,
+            porcinosEnCeba: cachedModel.porcinosEnCeba,
+            hembrasGestacion: cachedModel.hembrasGestacion,
+            partosMes: cachedModel.partosMes,
+            gdpPromedioGramoDia: cachedModel.gdpPromedioGramoDia,
+            registrosPendientesSync: pendingCount,
+          ),
+        );
       }
       return Right(
         DashboardSummaryModel(
@@ -55,7 +66,18 @@ class DashboardRepositoryImpl implements DashboardRepository {
     } on AppException catch (_) {
       final cachedJson = cacheService.getCachedJson(cacheService.keyCachedDashboard);
       if (cachedJson != null && cachedJson is Map<String, dynamic>) {
-        return Right(DashboardSummaryModel.fromJson(cachedJson, pendingSync: pendingCount));
+        final cachedModel = DashboardSummaryModel.fromJson(cachedJson);
+        return Right(
+          DashboardSummaryModel(
+            totalPorcinos: cachedModel.totalPorcinos,
+            alertasSanitarias: cachedModel.alertasSanitarias,
+            porcinosEnCeba: cachedModel.porcinosEnCeba,
+            hembrasGestacion: cachedModel.hembrasGestacion,
+            partosMes: cachedModel.partosMes,
+            gdpPromedioGramoDia: cachedModel.gdpPromedioGramoDia,
+            registrosPendientesSync: pendingCount,
+          ),
+        );
       }
       return Right(
         DashboardSummaryModel(

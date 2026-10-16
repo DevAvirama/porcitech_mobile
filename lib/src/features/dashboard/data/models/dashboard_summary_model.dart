@@ -11,15 +11,15 @@ class DashboardSummaryModel extends DashboardSummaryEntity {
     required super.registrosPendientesSync,
   });
 
-  factory DashboardSummaryModel.fromJson(Map<String, dynamic> json, {int pendingSync = 0}) {
+  factory DashboardSummaryModel.fromJson(Map<String, dynamic> json) {
     return DashboardSummaryModel(
-      totalPorcinos: json['total_porcinos'] as int? ?? 1420,
-      alertasSanitarias: json['alertas_sanitarias'] as int? ?? 3,
-      porcinosEnCeba: json['porcinos_ceba'] as int? ?? 860,
-      hembrasGestacion: json['hembras_gestacion'] as int? ?? 310,
-      partosMes: json['partos_mes'] as int? ?? 28,
-      gdpPromedioGramoDia: (json['gdp_promedio'] as num?)?.toDouble() ?? 835.0,
-      registrosPendientesSync: pendingSync,
+      totalPorcinos: json['total_porcinos'] as int? ?? json['total_animals'] as int? ?? 0,
+      alertasSanitarias: json['alertas_sanitarias'] as int? ?? json['total_alerts'] as int? ?? 0,
+      porcinosEnCeba: json['porcinos_en_ceba'] as int? ?? 0,
+      hembrasGestacion: json['hembras_gestacion'] as int? ?? 0,
+      partosMes: json['partos_mes'] as int? ?? 0,
+      gdpPromedioGramoDia: (json['gdp_promedio_gramo_dia'] as num?)?.toDouble() ?? 0.0,
+      registrosPendientesSync: json['registros_pendientes_sync'] as int? ?? json['pending_sync'] as int? ?? 0,
     );
   }
 
@@ -27,10 +27,11 @@ class DashboardSummaryModel extends DashboardSummaryEntity {
     return {
       'total_porcinos': totalPorcinos,
       'alertas_sanitarias': alertasSanitarias,
-      'porcinos_ceba': porcinosEnCeba,
+      'porcinos_en_ceba': porcinosEnCeba,
       'hembras_gestacion': hembrasGestacion,
       'partos_mes': partosMes,
-      'gdp_promedio': gdpPromedioGramoDia,
+      'gdp_promedio_gramo_dia': gdpPromedioGramoDia,
+      'registros_pendientes_sync': registrosPendientesSync,
     };
   }
 }

@@ -1,13 +1,10 @@
-import '../../../../core/constants/api_constants.dart';
-import '../../../../core/errors/exceptions.dart';
-import '../../../../core/network/dio_client.dart';
+import 'package:porcitech_mobile/src/core/network/dio_client.dart';
 import '../models/lote_model.dart';
 import '../models/porcino_model.dart';
 
 abstract class AnimalsRemoteDataSource {
   Future<List<PorcinoModel>> getPorcinos({String? query, String? filter});
   Future<PorcinoModel> getPorcinoById(int id);
-  Future<PorcinoModel> getPorcinoByQr(String codigo);
   Future<PorcinoModel> createPorcino({
     required String codigo,
     required String raza,
@@ -15,6 +12,7 @@ abstract class AnimalsRemoteDataSource {
     required DateTime fechaNacimiento,
     required int loteId,
   });
+  Future<PorcinoModel> getPorcinoByQr(String codigo);
   Future<List<LoteModel>> getLotes();
   Future<LoteModel> createLote({
     required String codigo,
@@ -25,66 +23,32 @@ abstract class AnimalsRemoteDataSource {
 }
 
 class AnimalsRemoteDataSourceImpl implements AnimalsRemoteDataSource {
-  final DioClient _client;
+  final DioClient dioClient;
 
-  AnimalsRemoteDataSourceImpl(this._client);
+  AnimalsRemoteDataSourceImpl(this.dioClient);
 
   @override
   Future<List<PorcinoModel>> getPorcinos({String? query, String? filter}) async {
-    try {
-      final queryParams = <String, dynamic>{};
-      if (query != null && query.isNotEmpty) queryParams['search'] = query;
-      if (filter != null && filter != 'Todos') queryParams['fase'] = filter;
-
-      final response = await _client.get(
-        ApiConstants.porcinos,
-        queryParameters: queryParams,
-      );
-
-      final data = response.data;
-      if (data is List) {
-        return data.map((e) => PorcinoModel.fromJson(e as Map<String, dynamic>)).toList();
-      } else if (data is Map<String, dynamic> && data['results'] is List) {
-        return (data['results'] as List)
-            .map((e) => PorcinoModel.fromJson(e as Map<String, dynamic>))
-            .toList();
-      }
-      return [];
-    } on AppException {
-      rethrow;
-    } catch (e) {
-      throw ServerException(e.toString());
+    final Map<String, dynamic> queryParams = {};
+    if (query != null && query.isNotEmpty) {
+      queryParams['q'] = query;
     }
+    if (filter != null && filter.isNotEmpty) {
+      queryParams['filter'] = filter;
+    }
+
+    final response = await dioClient.get(
+      '/api/porcinos/',
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
+    final list = response.data as List;
+    return list.map((json) => PorcinoModel.fromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
   Future<PorcinoModel> getPorcinoById(int id) async {
-    try {
-      final response = await _client.get(ApiConstants.porcinoById(id));
-      if (response.data is Map<String, dynamic>) {
-        return PorcinoModel.fromJson(response.data as Map<String, dynamic>);
-      }
-      throw const NotFoundException('Porcino no encontrado.');
-    } on AppException {
-      rethrow;
-    } catch (e) {
-      throw ServerException(e.toString());
-    }
-  }
-
-  @override
-  Future<PorcinoModel> getPorcinoByQr(String codigo) async {
-    try {
-      final response = await _client.get(ApiConstants.porcinoByQr(codigo));
-      if (response.data is Map<String, dynamic>) {
-        return PorcinoModel.fromJson(response.data as Map<String, dynamic>);
-      }
-      throw const NotFoundException('El código QR o arete no coincide con ningún porcino activo.');
-    } on AppException {
-      rethrow;
-    } catch (e) {
-      throw ServerException(e.toString());
-    }
+    final response = await dioClient.get('/api/porcinos/$id/');
+    return PorcinoModel.fromJson(response.data as Map<String, dynamic>);
   }
 
   @override
@@ -95,49 +59,27 @@ class AnimalsRemoteDataSourceImpl implements AnimalsRemoteDataSource {
     required DateTime fechaNacimiento,
     required int loteId,
   }) async {
-    try {
-      final payload = {
-        'codigo': codigo,
-        'raza': raza,
-        'sexo': sexo,
-        'fecha_nacimiento': fechaNacimiento.toIso8601String().split('T').first,
-        'lote': loteId,
-      };
+    final response = await dioClient.post('/api/porcinos/', data: {
+      'codigo': codigo,
+      'raza': raza,
+      'sexo': sexo,
+      'fecha_nacimiento': fechaNacimiento.toIso8601String(),
+      'lote_id': loteId,
+    });
+    return PorcinoModel.fromJson(response.data as Map<String, dynamic>);
+  }
 
-      final response = await _client.post(
-        ApiConstants.porcinos,
-        data: payload,
-      );
-
-      if (response.data is Map<String, dynamic>) {
-        return PorcinoModel.fromJson(response.data as Map<String, dynamic>);
-      }
-      throw const ServerException('Respuesta inválida al registrar porcino.');
-    } on AppException {
-      rethrow;
-    } catch (e) {
-      throw ServerException(e.toString());
-    }
+  @override
+  Future<PorcinoModel> getPorcinoByQr(String codigo) async {
+    final response = await dioClient.get('/api/porcinos/qr/$codigo/');
+    return PorcinoModel.fromJson(response.data as Map<String, dynamic>);
   }
 
   @override
   Future<List<LoteModel>> getLotes() async {
-    try {
-      final response = await _client.get(ApiConstants.lotes);
-      final data = response.data;
-      if (data is List) {
-        return data.map((e) => LoteModel.fromJson(e as Map<String, dynamic>)).toList();
-      } else if (data is Map<String, dynamic> && data['results'] is List) {
-        return (data['results'] as List)
-            .map((e) => LoteModel.fromJson(e as Map<String, dynamic>))
-            .toList();
-      }
-      return [];
-    } on AppException {
-      rethrow;
-    } catch (e) {
-      throw ServerException(e.toString());
-    }
+    final response = await dioClient.get('/api/lotes/');
+    final list = response.data as List;
+    return list.map((json) => LoteModel.fromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -147,24 +89,12 @@ class AnimalsRemoteDataSourceImpl implements AnimalsRemoteDataSource {
     required String fase,
     required String galpon,
   }) async {
-    try {
-      final response = await _client.post(
-        ApiConstants.lotes,
-        data: {
-          'codigo': codigo,
-          'nombre': nombre,
-          'fase': fase,
-          'galpon': galpon,
-        },
-      );
-      if (response.data is Map<String, dynamic>) {
-        return LoteModel.fromJson(response.data as Map<String, dynamic>);
-      }
-      throw const ServerException('Error al crear lote en FastAPI.');
-    } on AppException {
-      rethrow;
-    } catch (e) {
-      throw ServerException(e.toString());
-    }
+    final response = await dioClient.post('/api/lotes/', data: {
+      'codigo': codigo,
+      'nombre': nombre,
+      'fase': fase,
+      'galpon': galpon,
+    });
+    return LoteModel.fromJson(response.data as Map<String, dynamic>);
   }
 }
