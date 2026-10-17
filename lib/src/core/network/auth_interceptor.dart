@@ -18,7 +18,8 @@ class AuthInterceptor extends QueuedInterceptor {
     RequestInterceptorHandler handler,
   ) async {
     // Endpoints públicos que no requieren autorización Bearer
-    final isPublicEndpoint = options.path.contains('/api/auth/token/');
+    final isPublicEndpoint = options.path.contains('/auth/login') ||
+        options.path.contains('/api/auth/token/');
 
     if (!isPublicEndpoint) {
       final token = await secureStorage.getAccessToken();

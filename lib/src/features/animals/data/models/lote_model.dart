@@ -12,14 +12,40 @@ class LoteModel extends LoteEntity {
   });
 
   factory LoteModel.fromJson(Map<String, dynamic> json) {
+    int parsedId = 1;
+    final rawId = json['id'];
+    if (rawId is int) {
+      parsedId = rawId;
+    } else if (rawId != null) {
+      final idStr = rawId.toString().trim();
+      final asInt = int.tryParse(idStr);
+      if (asInt != null) {
+        parsedId = asInt;
+      } else {
+        final hexClean = idStr.replaceAll('-', '');
+        if (hexClean.length >= 8) {
+          parsedId = int.tryParse(hexClean.substring(0, 8), radix: 16) ?? idStr.hashCode.abs();
+        } else if (idStr.isNotEmpty) {
+          parsedId = idStr.hashCode.abs();
+        }
+      }
+    }
+
     return LoteModel(
-      id: json['id'] as int? ?? 1,
+      id: parsedId,
       codigo: json['codigo'] as String? ?? 'LOT-01',
       nombre: json['nombre'] as String? ?? 'Lote Principal',
-      fase: json['fase'] as String? ?? 'Ceba',
-      cantidadPorcinos: json['cantidad_porcinos'] as int? ?? json['cantidad'] as int? ?? 45,
-      pesoPromedio: (json['peso_promedio'] as num?)?.toDouble() ?? 81.2,
-      galpon: json['galpon'] as String? ?? 'Galpón 2 - Corral A',
+      fase: json['tipo_etapa'] as String? ?? json['fase'] as String? ?? 'Ceba',
+      cantidadPorcinos: json['ocupacion_actual'] as int? ??
+          json['cantidad_porcinos'] as int? ??
+          json['cantidad'] as int? ??
+          0,
+      pesoPromedio: (json['peso_promedio_kg'] as num?)?.toDouble() ??
+          (json['peso_promedio'] as num?)?.toDouble() ??
+          81.2,
+      galpon: json['ubicacion_galpon'] as String? ??
+          json['galpon'] as String? ??
+          'Galpón Principal',
     );
   }
 

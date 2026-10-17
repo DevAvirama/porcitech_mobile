@@ -41,38 +41,40 @@ class HealthRemoteDataSourceImpl implements HealthRemoteDataSource {
       final responseEvento = await _client.post(
         ApiConstants.eventosSanitarios,
         data: {
+          'animal_id': porcinoId.toString(),
           'porcino': porcinoId,
+          'tipo_evento': tipo.toLowerCase(),
           'tipo': tipo,
+          'producto_nombre': medicamento,
           'medicamento': medicamento,
           'lote_biologico': loteBiologico,
+          'dosis_aplicada': '$dosisMl ml',
           'dosis': dosisMl,
+          'via_administracion': viaAplicacion.toLowerCase(),
           'via_aplicacion': viaAplicacion,
+          'diagnostico': observaciones ?? 'Aplicación de $medicamento (Lote $loteBiologico)',
           'descripcion': 'Aplicación de $medicamento (Lote $loteBiologico)',
+          'fecha_tratamiento': fecha.toIso8601String(),
           'fecha': fecha.toIso8601String().split('T').first,
+          'tiempo_retiro_dias': diasRetiro,
           'dias_retiro': diasRetiro,
           'fecha_fin_retiro': fechaFin.toIso8601String().split('T').first,
           'observaciones': observaciones ?? 'Sin reacción adversa',
         },
       );
 
-      // 2. Descuento automático de inventario farmacológico
-      try {
-        await _client.post(
-          ApiConstants.inventarioDescuento,
-          data: {
-            'insumo': 8, // ID genérico de inventario de medicamentos
-            'medicamento': medicamento,
-            'cantidad': dosisMl.ceil(),
-            'unidad': 'ml',
-            'motivo': 'Sanidad animal porcino #$porcinoId',
-          },
-        );
-      } catch (_) {
-        // La deducción de inventario secundaria no bloquea el registro clínico del porcino
-      }
-
       final data = responseEvento.data;
-      final int id = (data is Map<String, dynamic>) ? (data['id'] as int? ?? 1) : 1;
+      int id = 1;
+      if (data is Map<String, dynamic> && data['id'] != null) {
+        final rawId = data['id'];
+        if (rawId is int) {
+          id = rawId;
+        } else {
+          final idStr = rawId.toString().replaceAll('-', '');
+          id = int.tryParse(idStr.length >= 8 ? idStr.substring(0, 8) : idStr, radix: 16) ??
+              rawId.toString().hashCode.abs();
+        }
+      }
 
       return HealthEventEntity(
         id: id,

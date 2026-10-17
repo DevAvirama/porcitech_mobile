@@ -34,25 +34,38 @@ class ReproductionRemoteDataSourceImpl implements ReproductionRemoteDataSource {
   }) async {
     try {
       final payload = {
+        'hembra_id': porcinoId.toString(),
         'porcino': porcinoId,
         'tipo': 'parto',
+        'fecha_parto': fecha.toIso8601String(),
         'fecha': fecha.toIso8601String().split('T').first,
         'numero_lechones': nacidosVivos,
         'nacidos_vivos': nacidosVivos,
         'nacidos_muertos': nacidosMuertos,
         'momias': momias,
+        'peso_camada_total_kg': pesoTotalCamadaKg,
         'peso_total_camada': pesoTotalCamadaKg,
         'numero_parto': numeroParto,
         'observaciones': observaciones ?? 'Parto atendido en maternidad',
       };
 
       final response = await _client.post(
-        ApiConstants.eventosReproductivos,
+        ApiConstants.partos,
         data: payload,
       );
 
       final data = response.data;
-      final int id = (data is Map<String, dynamic>) ? (data['id'] as int? ?? 1) : 1;
+      int id = 1;
+      if (data is Map<String, dynamic> && data['id'] != null) {
+        final rawId = data['id'];
+        if (rawId is int) {
+          id = rawId;
+        } else {
+          final idStr = rawId.toString().replaceAll('-', '');
+          id = int.tryParse(idStr.length >= 8 ? idStr.substring(0, 8) : idStr, radix: 16) ??
+              rawId.toString().hashCode.abs();
+        }
+      }
 
       return ReproductionEventEntity(
         id: id,

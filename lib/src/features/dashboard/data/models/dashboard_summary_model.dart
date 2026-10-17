@@ -12,13 +12,31 @@ class DashboardSummaryModel extends DashboardSummaryEntity {
   });
 
   factory DashboardSummaryModel.fromJson(Map<String, dynamic> json, {int pendingSync = 0}) {
+    final dist = (json['distribucion_etapas'] is Map<String, dynamic>)
+        ? json['distribucion_etapas'] as Map<String, dynamic>
+        : <String, dynamic>{};
+
+    final rawGmd = (json['gmd_promedio_kg'] as num?)?.toDouble() ??
+        (json['gdp_promedio'] as num?)?.toDouble();
+    final double gdpGramoDia = rawGmd != null
+        ? (rawGmd < 10.0 ? rawGmd * 1000.0 : rawGmd)
+        : 810.0;
+
     return DashboardSummaryModel(
-      totalPorcinos: json['total_porcinos'] as int? ?? 1420,
-      alertasSanitarias: json['alertas_sanitarias'] as int? ?? 3,
-      porcinosEnCeba: json['porcinos_ceba'] as int? ?? 860,
-      hembrasGestacion: json['hembras_gestacion'] as int? ?? 310,
-      partosMes: json['partos_mes'] as int? ?? 28,
-      gdpPromedioGramoDia: (json['gdp_promedio'] as num?)?.toDouble() ?? 835.0,
+      totalPorcinos: (json['total_animales'] as num?)?.toInt() ??
+          (json['total_porcinos'] as num?)?.toInt() ??
+          0,
+      alertasSanitarias: (json['alertas_sanitarias'] as num?)?.toInt() ?? 0,
+      porcinosEnCeba: (dist['engorde'] as num?)?.toInt() ??
+          (json['porcinos_ceba'] as num?)?.toInt() ??
+          0,
+      hembrasGestacion: (dist['gestacion'] as num?)?.toInt() ??
+          (json['hembras_gestacion'] as num?)?.toInt() ??
+          0,
+      partosMes: (dist['maternidad'] as num?)?.toInt() ??
+          (json['partos_mes'] as num?)?.toInt() ??
+          0,
+      gdpPromedioGramoDia: gdpGramoDia,
       registrosPendientesSync: pendingSync,
     );
   }

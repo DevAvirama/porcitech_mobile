@@ -27,8 +27,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final data = response.data;
       if (data is Map<String, dynamic>) {
         final token = (data['access_token'] ?? data['token'] ?? '') as String;
-        final userData = (data['user'] is Map<String, dynamic>)
-            ? data['user'] as Map<String, dynamic>
+        final rawUser = data['usuario'] ?? data['user'];
+        final userData = (rawUser is Map<String, dynamic>)
+            ? rawUser
             : data;
 
         return UserModel.fromJson(userData, token);

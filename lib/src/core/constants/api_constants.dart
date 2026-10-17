@@ -16,7 +16,7 @@ class ApiConstants {
 
   // --- Endpoints de Autenticación y Perfil ---
   static const String loginToken = '/auth/login';
-  static const String userProfile = '/usuarios/me';
+  static const String userProfile = '/auth/me';
 
   // --- Endpoints de Dashboard ---
   static const String dashboardSummary = '/dashboard/kpis';
@@ -39,6 +39,7 @@ class ApiConstants {
 
   // --- Endpoints de Control Reproductivo ---
   static const String eventosReproductivos = '/reproduccion/servicios';
+  static const String partos = '/reproduccion/partos';
 
   // --- Endpoints de Sincronización Offline ---
   static const String syncOfflineQueue = '/pesajes/manual';
