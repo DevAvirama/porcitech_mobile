@@ -3,40 +3,43 @@
 class ApiConstants {
   ApiConstants._();
 
-  /// URL Base configurable según el entorno (desarrollo local / staging / producción).
-  /// Por defecto apunta al host de desarrollo del backend FastAPI.
-  static const String defaultBaseUrl = 'https://api.porcitech.agro.co';
-  static const String localDevBaseUrl = 'http://10.0.2.2:8000'; // Emulador Android
+  /// URL Base configurable según el entorno (desarrollo local / VM / staging / producción).
+  /// Por defecto apunta a la IP de la máquina virtual / red de desarrollo.
+  static const String defaultBaseUrl = 'http://192.168.32.134:8000/api/v1';
+  static const String localDevBaseUrl = 'http://10.0.2.2:8000/api/v1'; // Emulador Android
+  static const String localHostBaseUrl = 'http://127.0.0.1:8000/api/v1'; // Host directo
 
   /// Timeouts optimizados para redes de campo con latencia moderada.
   static const Duration connectTimeout = Duration(seconds: 15);
   static const Duration receiveTimeout = Duration(seconds: 20);
   static const Duration sendTimeout = Duration(seconds: 20);
 
-  // --- Endpoints de Autenticación ---
-  static const String loginToken = '/api/auth/token/';
-  static const String userProfile = '/api/users/profile/';
+  // --- Endpoints de Autenticación y Perfil ---
+  static const String loginToken = '/auth/login';
+  static const String userProfile = '/usuarios/me';
 
   // --- Endpoints de Dashboard ---
-  static const String dashboardSummary = '/api/dashboard/summary/';
+  static const String dashboardSummary = '/dashboard/kpis';
 
-  // --- Endpoints de Lotes y Porcinos ---
-  static const String porcinos = '/api/porcinos/';
-  static String porcinoById(int id) => '/api/porcinos/$id/';
-  static String porcinoByQr(String codigo) => '/api/porcinos/qr/$codigo/';
-  static const String lotes = '/api/lotes/';
+  // --- Endpoints de Corrales y Porcinos ---
+  static const String porcinos = '/animales';
+  static String porcinoById(dynamic id) => '/animales/$id';
+  static String porcinoByQr(String codigo) => '/animales/qr/$codigo';
+  static const String lotes = '/corrales';
 
   // --- Endpoints de Pesaje y Visión Artificial ---
-  static const String pesos = '/api/pesos/';
-  static const String iaEstimarPeso = '/api/ia/estimar-peso/';
+  static const String pesos = '/pesajes/manual';
+  static const String iaEstimarPeso = '/pesajes/vision';
+  static const String camaraRtsp = '/pesajes/camara-rtsp';
+  static String pesajesPorAnimal(dynamic id) => '/pesajes/animal/$id';
 
   // --- Endpoints de Sanidad y Trazabilidad Farmacológica ---
-  static const String eventosSanitarios = '/api/eventos-sanitarios/';
-  static const String inventarioDescuento = '/api/inventario/descuento/';
+  static const String eventosSanitarios = '/sanidad/tratamientos';
+  static const String inventarioDescuento = '/inventario/movimientos';
 
   // --- Endpoints de Control Reproductivo ---
-  static const String eventosReproductivos = '/api/eventos-reproductivos/';
+  static const String eventosReproductivos = '/reproduccion/servicios';
 
   // --- Endpoints de Sincronización Offline ---
-  static const String syncOfflineQueue = '/api/sync/offline-queue/';
+  static const String syncOfflineQueue = '/pesajes/manual';
 }

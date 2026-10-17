@@ -87,10 +87,15 @@ class WeightRemoteDataSourceImpl implements WeightRemoteDataSource {
       if (data is Map<String, dynamic>) {
         return IaWeightEstimationResult(
           porcinoId: data['porcino'] as int? ?? porcinoId,
-          pesoEstimado: (data['peso_estimado'] as num?)?.toDouble() ?? 84.7,
+          pesoEstimado: (data['peso_estimado_kg'] as num?)?.toDouble() ??
+              (data['peso_estimado'] as num?)?.toDouble() ??
+              84.7,
           unidad: data['unidad'] as String? ?? 'kg',
-          metodo: data['metodo'] as String? ?? 'ia',
-          fecha: DateTime.tryParse(data['fecha']?.toString() ?? '') ?? DateTime.now(),
+          metodo: data['metodo'] as String? ?? (data['fuente'] as String? ?? 'ia'),
+          fecha: DateTime.tryParse(data['tiempo_registro']?.toString() ??
+                  data['fecha']?.toString() ??
+                  '') ??
+              DateTime.now(),
           confianzaIa: (data['confianza'] as num?)?.toDouble() ?? 0.94,
         );
       }

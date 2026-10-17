@@ -32,7 +32,10 @@ class PorcinoModel extends PorcinoEntity {
     }).toList();
 
     // Si no viene curva desde FastAPI, generamos una curva predeterminada coherente para fl_chart
-    final double currentPeso = (json['peso_actual'] as num?)?.toDouble() ?? (json['peso'] as num?)?.toDouble() ?? 82.5;
+    final double currentPeso = (json['peso_actual_kg'] as num?)?.toDouble() ??
+        (json['peso_actual'] as num?)?.toDouble() ??
+        (json['peso'] as num?)?.toDouble() ??
+        82.5;
     final List<PesoHistoricoItem> curvaFinal = curva.isNotEmpty
         ? curva
         : [
@@ -59,17 +62,22 @@ class PorcinoModel extends PorcinoEntity {
           ];
 
     return PorcinoModel(
-      id: json['id'] as int? ?? 1,
-      codigo: json['codigo'] as String? ?? 'POR-001',
+      id: json['id'] is int
+          ? json['id'] as int
+          : (int.tryParse(json['id']?.toString() ?? '') ?? 1),
+      codigo: json['codigo_arete'] as String? ?? json['codigo'] as String? ?? 'POR-001',
       raza: json['raza'] as String? ?? 'Landrace',
       sexo: json['sexo'] as String? ?? 'Hembra',
       fechaNacimiento: DateTime.tryParse(json['fecha_nacimiento']?.toString() ?? '') ??
           DateTime.now().subtract(const Duration(days: 140)),
       loteId: json['lote'] as int? ?? json['lote_id'] as int? ?? 1,
-      loteNombre: json['lote_nombre'] as String? ?? 'Lote Ceba 03',
+      loteNombre: json['corral_codigo'] as String? ??
+          json['lote_nombre'] as String? ??
+          'Lote Ceba 03',
       pesoActual: currentPeso,
-      estadoSanitario: json['estado_sanitario'] as String? ?? 'Sano',
-      fase: json['fase'] as String? ?? 'Ceba',
+      estadoSanitario: json['estado_sanitario'] as String? ??
+          (json['estado'] == 'enfermo' ? 'Enfermo' : 'Sano'),
+      fase: json['estado'] as String? ?? json['fase'] as String? ?? 'Ceba',
       gdpActualGramoDia: (json['gdp_actual'] as num?)?.toDouble() ?? 820.0,
       diasEnFase: json['dias_en_ceba'] as int? ?? json['dias_en_fase'] as int? ?? 65,
       medicacionActiva: json['medicacion_activa'] as String?,
