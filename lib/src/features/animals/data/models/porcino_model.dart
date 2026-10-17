@@ -1,8 +1,16 @@
 import '../../domain/entities/porcino_entity.dart';
 
 class PorcinoModel extends PorcinoEntity {
+  /// Registro en memoria que asocia el ID entero de la UI con el UUID real de PostgreSQL.
+  static final Map<int, String> _uuidRegistry = <int, String>{};
+  static final Map<int, String> _corralUuidRegistry = <int, String>{};
+
+  static String? resolveUuid(int id) => _uuidRegistry[id];
+  static String? resolveCorralUuid(int id) => _corralUuidRegistry[id];
+
   const PorcinoModel({
     required super.id,
+    super.uuid,
     required super.codigo,
     required super.raza,
     required super.sexo,
@@ -62,6 +70,7 @@ class PorcinoModel extends PorcinoEntity {
           ];
 
     int parsedId = 1;
+    String? rawUuid;
     final rawId = json['id'];
     if (rawId is int) {
       parsedId = rawId;
@@ -71,17 +80,25 @@ class PorcinoModel extends PorcinoEntity {
       if (asInt != null) {
         parsedId = asInt;
       } else {
+        rawUuid = idStr;
         final hexClean = idStr.replaceAll('-', '');
         if (hexClean.length >= 8) {
           parsedId = int.tryParse(hexClean.substring(0, 8), radix: 16) ?? idStr.hashCode.abs();
         } else if (idStr.isNotEmpty) {
           parsedId = idStr.hashCode.abs();
         }
+        _uuidRegistry[parsedId] = idStr;
       }
+    }
+
+    final rawCorralId = json['corral_id']?.toString().trim();
+    if (rawCorralId != null && rawCorralId.isNotEmpty) {
+      _corralUuidRegistry[parsedId] = rawCorralId;
     }
 
     return PorcinoModel(
       id: parsedId,
+      uuid: rawUuid,
       codigo: json['codigo_arete'] as String? ?? json['codigo'] as String? ?? 'POR-001',
       raza: json['raza'] as String? ?? 'Landrace',
       sexo: json['sexo'] as String? ?? 'Hembra',
@@ -108,7 +125,9 @@ class PorcinoModel extends PorcinoEntity {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'id': uuid ?? id,
+      'uuid': uuid,
+      'codigo_arete': codigo,
       'codigo': codigo,
       'raza': raza,
       'sexo': sexo,

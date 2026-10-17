@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../animals/data/models/porcino_model.dart';
 import '../../domain/entities/weight_record_entity.dart';
 
 abstract class WeightRemoteDataSource {
@@ -32,7 +33,12 @@ class WeightRemoteDataSourceImpl implements WeightRemoteDataSource {
     required String tipo,
   }) async {
     try {
+      final resolvedAnimalUuid = PorcinoModel.resolveUuid(porcinoId);
+      final resolvedCorralUuid = PorcinoModel.resolveCorralUuid(porcinoId);
       final payload = {
+        if (resolvedAnimalUuid != null) 'id_cerdo': resolvedAnimalUuid,
+        if (resolvedCorralUuid != null) 'corral_id': resolvedCorralUuid,
+        'peso_kg': peso,
         'porcino': porcinoId,
         'peso': peso,
         'fecha': fecha.toIso8601String().split('T').first,
@@ -46,10 +52,21 @@ class WeightRemoteDataSourceImpl implements WeightRemoteDataSource {
 
       final data = response.data;
       if (data is Map<String, dynamic>) {
+        int? parsedId;
+        final rawId = data['id_registro'] ?? data['id'];
+        if (rawId is int) {
+          parsedId = rawId;
+        } else if (rawId != null) {
+          final idStr = rawId.toString().replaceAll('-', '');
+          parsedId = int.tryParse(idStr.length >= 8 ? idStr.substring(0, 8) : idStr, radix: 16) ??
+              rawId.toString().hashCode.abs();
+        }
         return WeightRecordEntity(
-          id: data['id'] as int?,
+          id: parsedId,
           porcinoId: porcinoId,
-          peso: (data['peso'] as num?)?.toDouble() ?? peso,
+          peso: (data['peso_kg'] as num?)?.toDouble() ??
+              (data['peso'] as num?)?.toDouble() ??
+              peso,
           fecha: fecha,
           tipo: tipo,
           gdpCalculada: (data['gdp'] as num?)?.toDouble(),
@@ -70,7 +87,11 @@ class WeightRemoteDataSourceImpl implements WeightRemoteDataSource {
   }) async {
     try {
       final fileName = imagenCenital.path.split('/').last;
+      final resolvedAnimalUuid = PorcinoModel.resolveUuid(porcinoId);
+      final resolvedCorralUuid = PorcinoModel.resolveCorralUuid(porcinoId);
       final formData = FormData.fromMap({
+        if (resolvedAnimalUuid != null) 'id_cerdo': resolvedAnimalUuid,
+        if (resolvedCorralUuid != null) 'corral_id': resolvedCorralUuid,
         'porcino': porcinoId.toString(),
         'file': await MultipartFile.fromFile(
           imagenCenital.path,
@@ -86,7 +107,7 @@ class WeightRemoteDataSourceImpl implements WeightRemoteDataSource {
       final data = response.data;
       if (data is Map<String, dynamic>) {
         return IaWeightEstimationResult(
-          porcinoId: data['porcino'] as int? ?? porcinoId,
+          porcinoId: data['porcino'] is int ? data['porcino'] as int : porcinoId,
           pesoEstimado: (data['peso_estimado_kg'] as num?)?.toDouble() ??
               (data['peso_estimado'] as num?)?.toDouble() ??
               84.7,

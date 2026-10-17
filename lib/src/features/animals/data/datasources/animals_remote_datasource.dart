@@ -60,7 +60,8 @@ class AnimalsRemoteDataSourceImpl implements AnimalsRemoteDataSource {
   @override
   Future<PorcinoModel> getPorcinoById(int id) async {
     try {
-      final response = await _client.get(ApiConstants.porcinoById(id));
+      final targetId = PorcinoModel.resolveUuid(id) ?? id;
+      final response = await _client.get(ApiConstants.porcinoById(targetId));
       if (response.data is Map<String, dynamic>) {
         return PorcinoModel.fromJson(response.data as Map<String, dynamic>);
       }
@@ -96,11 +97,14 @@ class AnimalsRemoteDataSourceImpl implements AnimalsRemoteDataSource {
     required int loteId,
   }) async {
     try {
+      final resolvedCorralUuid = LoteModel.resolveUuid(loteId);
       final payload = {
+        'codigo_arete': codigo,
         'codigo': codigo,
         'raza': raza,
-        'sexo': sexo,
+        'sexo': sexo.toLowerCase().contains('macho') ? 'macho' : 'hembra',
         'fecha_nacimiento': fechaNacimiento.toIso8601String().split('T').first,
+        if (resolvedCorralUuid != null) 'corral_id': resolvedCorralUuid,
         'lote': loteId,
       };
 

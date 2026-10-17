@@ -20,6 +20,7 @@ class PesoHistoricoItem extends Equatable {
 /// nunca exponiendo UUIDs crudos.
 class PorcinoEntity extends Equatable {
   final int id;
+  final String? uuid; // UUID original en PostgreSQL / FastAPI
   final String codigo; // Arete de campo (ej: POR-4092, H-104)
   final String raza; // Landrace, Large White, Pietrain, Duroc
   final String sexo; // 'Hembra' | 'Macho' | 'Macho Castrado'
@@ -38,6 +39,7 @@ class PorcinoEntity extends Equatable {
 
   const PorcinoEntity({
     required this.id,
+    this.uuid,
     required this.codigo,
     required this.raza,
     required this.sexo,
@@ -62,6 +64,7 @@ class PorcinoEntity extends Equatable {
   @override
   List<Object?> get props => [
         id,
+        uuid,
         codigo,
         raza,
         sexo,
@@ -83,6 +86,7 @@ class PorcinoEntity extends Equatable {
 /// Entidad inmutable que representa un Lote de animales en galpón.
 class LoteEntity extends Equatable {
   final int id;
+  final String? uuid;
   final String codigo;
   final String nombre;
   final String fase;
@@ -92,6 +96,7 @@ class LoteEntity extends Equatable {
 
   const LoteEntity({
     required this.id,
+    this.uuid,
     required this.codigo,
     required this.nombre,
     required this.fase,
@@ -103,6 +108,7 @@ class LoteEntity extends Equatable {
   @override
   List<Object?> get props => [
         id,
+        uuid,
         codigo,
         nombre,
         fase,

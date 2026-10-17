@@ -1,6 +1,7 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../animals/data/models/porcino_model.dart';
 import '../../domain/entities/reproduction_event_entity.dart';
 
 abstract class ReproductionRemoteDataSource {
@@ -33,8 +34,9 @@ class ReproductionRemoteDataSourceImpl implements ReproductionRemoteDataSource {
     String? observaciones,
   }) async {
     try {
+      final resolvedHembraUuid = PorcinoModel.resolveUuid(porcinoId);
       final payload = {
-        'hembra_id': porcinoId.toString(),
+        if (resolvedHembraUuid != null) 'hembra_id': resolvedHembraUuid,
         'porcino': porcinoId,
         'tipo': 'parto',
         'fecha_parto': fecha.toIso8601String(),

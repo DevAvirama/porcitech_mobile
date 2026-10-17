@@ -1,8 +1,13 @@
 import '../../domain/entities/porcino_entity.dart';
 
 class LoteModel extends LoteEntity {
+  static final Map<int, String> _uuidRegistry = <int, String>{};
+
+  static String? resolveUuid(int id) => _uuidRegistry[id];
+
   const LoteModel({
     required super.id,
+    super.uuid,
     required super.codigo,
     required super.nombre,
     required super.fase,
@@ -13,6 +18,7 @@ class LoteModel extends LoteEntity {
 
   factory LoteModel.fromJson(Map<String, dynamic> json) {
     int parsedId = 1;
+    String? rawUuid;
     final rawId = json['id'];
     if (rawId is int) {
       parsedId = rawId;
@@ -22,17 +28,20 @@ class LoteModel extends LoteEntity {
       if (asInt != null) {
         parsedId = asInt;
       } else {
+        rawUuid = idStr;
         final hexClean = idStr.replaceAll('-', '');
         if (hexClean.length >= 8) {
           parsedId = int.tryParse(hexClean.substring(0, 8), radix: 16) ?? idStr.hashCode.abs();
         } else if (idStr.isNotEmpty) {
           parsedId = idStr.hashCode.abs();
         }
+        _uuidRegistry[parsedId] = idStr;
       }
     }
 
     return LoteModel(
       id: parsedId,
+      uuid: rawUuid,
       codigo: json['codigo'] as String? ?? 'LOT-01',
       nombre: json['nombre'] as String? ?? 'Lote Principal',
       fase: json['tipo_etapa'] as String? ?? json['fase'] as String? ?? 'Ceba',
@@ -51,7 +60,8 @@ class LoteModel extends LoteEntity {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'id': uuid ?? id,
+      'uuid': uuid,
       'codigo': codigo,
       'nombre': nombre,
       'fase': fase,

@@ -1,6 +1,7 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../animals/data/models/porcino_model.dart';
 import '../../domain/entities/health_event_entity.dart';
 
 abstract class HealthRemoteDataSource {
@@ -36,12 +37,13 @@ class HealthRemoteDataSourceImpl implements HealthRemoteDataSource {
   }) async {
     try {
       final fechaFin = fecha.add(Duration(days: diasRetiro));
+      final resolvedAnimalUuid = PorcinoModel.resolveUuid(porcinoId);
 
       // 1. Registro del evento clínico en FastAPI
       final responseEvento = await _client.post(
         ApiConstants.eventosSanitarios,
         data: {
-          'animal_id': porcinoId.toString(),
+          if (resolvedAnimalUuid != null) 'animal_id': resolvedAnimalUuid,
           'porcino': porcinoId,
           'tipo_evento': tipo.toLowerCase(),
           'tipo': tipo,
