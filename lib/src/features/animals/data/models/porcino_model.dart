@@ -61,16 +61,33 @@ class PorcinoModel extends PorcinoEntity {
             ),
           ];
 
+    int parsedId = 1;
+    final rawId = json['id'];
+    if (rawId is int) {
+      parsedId = rawId;
+    } else if (rawId != null) {
+      final idStr = rawId.toString().trim();
+      final asInt = int.tryParse(idStr);
+      if (asInt != null) {
+        parsedId = asInt;
+      } else {
+        final hexClean = idStr.replaceAll('-', '');
+        if (hexClean.length >= 8) {
+          parsedId = int.tryParse(hexClean.substring(0, 8), radix: 16) ?? idStr.hashCode.abs();
+        } else if (idStr.isNotEmpty) {
+          parsedId = idStr.hashCode.abs();
+        }
+      }
+    }
+
     return PorcinoModel(
-      id: json['id'] is int
-          ? json['id'] as int
-          : (int.tryParse(json['id']?.toString() ?? '') ?? 1),
+      id: parsedId,
       codigo: json['codigo_arete'] as String? ?? json['codigo'] as String? ?? 'POR-001',
       raza: json['raza'] as String? ?? 'Landrace',
       sexo: json['sexo'] as String? ?? 'Hembra',
       fechaNacimiento: DateTime.tryParse(json['fecha_nacimiento']?.toString() ?? '') ??
           DateTime.now().subtract(const Duration(days: 140)),
-      loteId: json['lote'] as int? ?? json['lote_id'] as int? ?? 1,
+      loteId: json['lote'] is int ? json['lote'] as int : (json['lote_id'] is int ? json['lote_id'] as int : 1),
       loteNombre: json['corral_codigo'] as String? ??
           json['lote_nombre'] as String? ??
           'Lote Ceba 03',

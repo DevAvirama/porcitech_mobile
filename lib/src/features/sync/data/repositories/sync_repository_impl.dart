@@ -41,10 +41,9 @@ class SyncRepositoryImpl implements SyncRepository {
       final processed = await remoteDataSource.sendOfflineQueue(items);
       await cacheService.clearOfflineQueue();
       return Right(processed);
-    } on AppException catch (_) {
-      // Procesamiento optimista para pruebas de campo sin servidor backend activo
-      await cacheService.clearOfflineQueue();
-      return Right(items.length);
+    } on AppException catch (e) {
+      // Preservar la cola offline para reintentar cuando se restablezca la conexión con el backend
+      return Left(ServerFailure(e.message));
     } catch (e) {
       return Left(UnexpectedFailure(e.toString()));
     }
