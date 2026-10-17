@@ -32,18 +32,36 @@ class SyncRemoteDataSourceImpl implements SyncRemoteDataSource {
     }
   }
 
+  String _normalizeEndpoint(String rawEndpoint) {
+    switch (rawEndpoint) {
+      case '/api/porcinos/':
+        return ApiConstants.porcinos;
+      case '/api/lotes/':
+        return ApiConstants.lotes;
+      case '/api/eventos-sanitarios/':
+        return ApiConstants.eventosSanitarios;
+      case '/api/eventos-reproductivos/':
+        return ApiConstants.partos;
+      case '/api/pesos/':
+        return ApiConstants.pesos;
+      default:
+        return rawEndpoint.isNotEmpty ? rawEndpoint : ApiConstants.pesos;
+    }
+  }
+
   @override
   Future<int> sendOfflineQueue(List<Map<String, dynamic>> queueItems) async {
     try {
-      final response = await _client.post(
-        ApiConstants.syncOfflineQueue,
-        data: {'queue': queueItems},
-      );
-      final data = response.data;
-      if (data is Map<String, dynamic>) {
-        return data['processed_count'] as int? ?? queueItems.length;
+      int processed = 0;
+      for (final item in queueItems) {
+        final endpoint = _normalizeEndpoint(item['endpoint']?.toString() ?? '');
+        final payload = item['payload'] is Map<String, dynamic>
+            ? item['payload'] as Map<String, dynamic>
+            : <String, dynamic>{};
+        await _client.post(endpoint, data: payload);
+        processed++;
       }
-      return queueItems.length;
+      return processed;
     } on AppException {
       rethrow;
     } catch (e) {

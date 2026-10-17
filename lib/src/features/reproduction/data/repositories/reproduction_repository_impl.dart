@@ -1,7 +1,9 @@
 import 'package:fpdart/fpdart.dart';
+import 'package:porcitech_mobile/src/core/constants/api_constants.dart';
 import 'package:porcitech_mobile/src/core/errors/exceptions.dart';
 import 'package:porcitech_mobile/src/core/errors/failures.dart';
 import 'package:porcitech_mobile/src/core/storage/local_cache_service.dart';
+import 'package:porcitech_mobile/src/features/animals/data/models/porcino_model.dart';
 import 'package:porcitech_mobile/src/features/reproduction/data/datasources/reproduction_remote_datasource.dart';
 import 'package:porcitech_mobile/src/features/reproduction/domain/entities/reproduction_event_entity.dart';
 import 'package:porcitech_mobile/src/features/reproduction/domain/repositories/reproduction_repository.dart';
@@ -38,20 +40,26 @@ class ReproductionRepositoryImpl implements ReproductionRepository {
       observaciones: observaciones,
     );
 
+    final resolvedHembraUuid = PorcinoModel.resolveUuid(porcinoId);
+    final resolvedCorralUuid = PorcinoModel.resolveCorralUuid(porcinoId);
+    final offlinePayload = <String, dynamic>{
+      if (resolvedHembraUuid != null) 'hembra_id': resolvedHembraUuid,
+      if (resolvedCorralUuid != null) 'corral_maternidad_id': resolvedCorralUuid,
+      'porcino': porcinoId,
+      'fecha_parto': fecha.toIso8601String(),
+      'nacidos_vivos': nacidosVivos,
+      'nacidos_muertos': nacidosMuertos,
+      'momias': momias,
+      'peso_promedio_nacimiento_kg':
+          nacidosVivos > 0 ? (pesoTotalCamadaKg / nacidosVivos) : 1.3,
+      'observaciones': observaciones ?? 'Parto #$numeroParto registrado en campo',
+    };
+
     if (cacheService.isOfflineModeEnabled()) {
       await cacheService.enqueueSyncItem(
-        endpoint: '/api/eventos-reproductivos/',
+        endpoint: ApiConstants.partos,
         method: 'POST',
-        payload: {
-          'porcino': porcinoId,
-          'tipo': 'parto',
-          'fecha': fecha.toIso8601String().split('T').first,
-          'numero_lechones': nacidosVivos,
-          'nacidos_vivos': nacidosVivos,
-          'nacidos_muertos': nacidosMuertos,
-          'momias': momias,
-          'peso_total_camada': pesoTotalCamadaKg,
-        },
+        payload: offlinePayload,
         description: 'Parto cerda #$porcinoId: $nacidosVivos vivos, $nacidosMuertos muertos',
       );
       return Right(localEntity);
@@ -71,18 +79,9 @@ class ReproductionRepositoryImpl implements ReproductionRepository {
       return Right(remote);
     } on AppException {
       await cacheService.enqueueSyncItem(
-        endpoint: '/api/eventos-reproductivos/',
+        endpoint: ApiConstants.partos,
         method: 'POST',
-        payload: {
-          'porcino': porcinoId,
-          'tipo': 'parto',
-          'fecha': fecha.toIso8601String().split('T').first,
-          'numero_lechones': nacidosVivos,
-          'nacidos_vivos': nacidosVivos,
-          'nacidos_muertos': nacidosMuertos,
-          'momias': momias,
-          'peso_total_camada': pesoTotalCamadaKg,
-        },
+        payload: offlinePayload,
         description: 'Parto cerda #$porcinoId: $nacidosVivos vivos, $nacidosMuertos muertos',
       );
       return Right(localEntity);

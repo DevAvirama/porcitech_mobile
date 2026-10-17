@@ -179,16 +179,19 @@ class _MainDashboardFlowState extends ConsumerState<MainDashboardFlow> {
     );
   }
 
-  void _openPesajeScreen(PorcinoEntity porcino) {
+  void _openPesajeScreen(PorcinoEntity porcino, {double? initialWeight}) {
     _navigateTo(
       RegistrarPesajePorcitech(
         porcino: porcino,
+        initialWeight: initialWeight,
         onOpenCapturaIa: () {
           _navigateTo(
             CapturaCenitalScreen(
               porcino: porcino,
               onPesoAplicado: (pesoEstimado) {
                 ref.read(animalsNotifierProvider.notifier).fetchPorcinos();
+                Navigator.of(context).pop();
+                _openPesajeScreen(porcino, initialWeight: pesoEstimado);
               },
             ),
           );

@@ -106,6 +106,12 @@ class WeightRemoteDataSourceImpl implements WeightRemoteDataSource {
 
       final data = response.data;
       if (data is Map<String, dynamic>) {
+        if (data['detectado'] == false) {
+          throw ServerException(
+            data['mensaje']?.toString() ??
+                'No se detectó ningún ejemplar porcino en la imagen.',
+          );
+        }
         return IaWeightEstimationResult(
           porcinoId: data['porcino'] is int ? data['porcino'] as int : porcinoId,
           pesoEstimado: (data['peso_estimado_kg'] as num?)?.toDouble() ??

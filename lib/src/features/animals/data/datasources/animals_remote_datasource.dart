@@ -34,7 +34,9 @@ class AnimalsRemoteDataSourceImpl implements AnimalsRemoteDataSource {
     try {
       final queryParams = <String, dynamic>{};
       if (query != null && query.isNotEmpty) queryParams['search'] = query;
-      if (filter != null && filter != 'Todos') queryParams['fase'] = filter;
+      if (filter != null && filter != 'Todos') {
+        queryParams['estado'] = filter.toLowerCase();
+      }
 
       final response = await _client.get(
         ApiConstants.porcinos,
@@ -152,13 +154,26 @@ class AnimalsRemoteDataSourceImpl implements AnimalsRemoteDataSource {
     required String galpon,
   }) async {
     try {
+      final f = fase.toLowerCase();
+      String tipoEtapa = 'engorde';
+      if (f.contains('gesta')) {
+        tipoEtapa = 'gestacion';
+      } else if (f.contains('mater') || f.contains('lacta')) {
+        tipoEtapa = 'maternidad';
+      } else if (f.contains('deste') || f.contains('prece')) {
+        tipoEtapa = 'destete';
+      } else if (f.contains('cuaren')) {
+        tipoEtapa = 'cuarentena';
+      }
+
       final response = await _client.post(
         ApiConstants.lotes,
         data: {
           'codigo': codigo,
-          'nombre': nombre,
-          'fase': fase,
-          'galpon': galpon,
+          'nombre': nombre.isNotEmpty ? nombre : codigo,
+          'ubicacion_galpon': galpon,
+          'tipo_etapa': tipoEtapa,
+          'capacidad_maxima': 25,
         },
       );
       if (response.data is Map<String, dynamic>) {

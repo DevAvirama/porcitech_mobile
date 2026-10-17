@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:fpdart/fpdart.dart';
+import 'package:porcitech_mobile/src/core/constants/api_constants.dart';
 import 'package:porcitech_mobile/src/core/errors/exceptions.dart';
 import 'package:porcitech_mobile/src/core/errors/failures.dart';
 import 'package:porcitech_mobile/src/core/storage/local_cache_service.dart';
+import 'package:porcitech_mobile/src/features/animals/data/models/porcino_model.dart';
 import 'package:porcitech_mobile/src/features/weight_estimation/data/datasources/weight_remote_datasource.dart';
 import 'package:porcitech_mobile/src/features/weight_estimation/domain/entities/weight_record_entity.dart';
 import 'package:porcitech_mobile/src/features/weight_estimation/domain/repositories/weight_repository.dart';
@@ -31,16 +33,23 @@ class WeightRepositoryImpl implements WeightRepository {
       tipo: tipo,
     );
 
+    final resolvedAnimalUuid = PorcinoModel.resolveUuid(porcinoId);
+    final resolvedCorralUuid = PorcinoModel.resolveCorralUuid(porcinoId);
+    final offlinePayload = <String, dynamic>{
+      if (resolvedAnimalUuid != null) 'animal_id': resolvedAnimalUuid,
+      if (resolvedCorralUuid != null) 'corral_id': resolvedCorralUuid,
+      'porcino': porcinoId,
+      'peso_kg': peso,
+      'metodo_pesaje':
+          tipo.toLowerCase().contains('ia') ? 'ia_vision' : 'bascula_digital',
+      'tiempo': fecha.toIso8601String(),
+    };
+
     if (cacheService.isOfflineModeEnabled()) {
       await cacheService.enqueueSyncItem(
-        endpoint: '/api/pesos/',
+        endpoint: ApiConstants.pesos,
         method: 'POST',
-        payload: {
-          'porcino': porcinoId,
-          'peso': peso,
-          'fecha': fecha.toIso8601String().split('T').first,
-          'tipo': tipo,
-        },
+        payload: offlinePayload,
         description: 'Pesaje porcino #$porcinoId: $peso kg ($tipo)',
       );
       return Right(record);
@@ -56,14 +65,9 @@ class WeightRepositoryImpl implements WeightRepository {
       return Right(remote);
     } on AppException {
       await cacheService.enqueueSyncItem(
-        endpoint: '/api/pesos/',
+        endpoint: ApiConstants.pesos,
         method: 'POST',
-        payload: {
-          'porcino': porcinoId,
-          'peso': peso,
-          'fecha': fecha.toIso8601String().split('T').first,
-          'tipo': tipo,
-        },
+        payload: offlinePayload,
         description: 'Pesaje porcino #$porcinoId: $peso kg ($tipo)',
       );
       return Right(record);

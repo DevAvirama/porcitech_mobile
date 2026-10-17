@@ -1,7 +1,9 @@
 import 'package:fpdart/fpdart.dart';
+import 'package:porcitech_mobile/src/core/constants/api_constants.dart';
 import 'package:porcitech_mobile/src/core/errors/exceptions.dart';
 import 'package:porcitech_mobile/src/core/errors/failures.dart';
 import 'package:porcitech_mobile/src/core/storage/local_cache_service.dart';
+import 'package:porcitech_mobile/src/features/animals/data/models/porcino_model.dart';
 import 'package:porcitech_mobile/src/features/health_record/data/datasources/health_remote_datasource.dart';
 import 'package:porcitech_mobile/src/features/health_record/domain/entities/health_event_entity.dart';
 import 'package:porcitech_mobile/src/features/health_record/domain/repositories/health_repository.dart';
@@ -42,20 +44,35 @@ class HealthRepositoryImpl implements HealthRepository {
       observaciones: observaciones,
     );
 
+    final resolvedAnimalUuid = PorcinoModel.resolveUuid(porcinoId);
+    final resolvedCorralUuid = PorcinoModel.resolveCorralUuid(porcinoId);
+    final tipoLower = tipo.toLowerCase();
+    final tipoEvento = tipoLower.contains('vacun')
+        ? 'vacunacion'
+        : tipoLower.contains('despara')
+            ? 'desparasitacion'
+            : 'medicacion';
+
+    final offlinePayload = <String, dynamic>{
+      if (resolvedAnimalUuid != null) 'animal_id': resolvedAnimalUuid,
+      if (resolvedCorralUuid != null) 'corral_id': resolvedCorralUuid,
+      'porcino': porcinoId,
+      'tipo_evento': tipoEvento,
+      'producto_nombre': medicamento,
+      'lote_producto': loteBiologico,
+      'dosis_aplicada': '$dosisMl ml',
+      'via_administracion': viaAplicacion.toLowerCase(),
+      'fecha_tratamiento': fecha.toIso8601String(),
+      'tiempo_retiro_dias': diasRetiro,
+      if (observaciones != null && observaciones.isNotEmpty)
+        'motivo_diagnostico': observaciones,
+    };
+
     if (cacheService.isOfflineModeEnabled()) {
       await cacheService.enqueueSyncItem(
-        endpoint: '/api/eventos-sanitarios/',
+        endpoint: ApiConstants.eventosSanitarios,
         method: 'POST',
-        payload: {
-          'porcino': porcinoId,
-          'tipo': tipo,
-          'medicamento': medicamento,
-          'lote_biologico': loteBiologico,
-          'dosis': dosisMl,
-          'via_aplicacion': viaAplicacion,
-          'fecha': fecha.toIso8601String().split('T').first,
-          'dias_retiro': diasRetiro,
-        },
+        payload: offlinePayload,
         description: 'Sanidad #$porcinoId: $medicamento ($dosisMl ml)',
       );
       return Right(localEntity);
@@ -76,18 +93,9 @@ class HealthRepositoryImpl implements HealthRepository {
       return Right(remote);
     } on AppException {
       await cacheService.enqueueSyncItem(
-        endpoint: '/api/eventos-sanitarios/',
+        endpoint: ApiConstants.eventosSanitarios,
         method: 'POST',
-        payload: {
-          'porcino': porcinoId,
-          'tipo': tipo,
-          'medicamento': medicamento,
-          'lote_biologico': loteBiologico,
-          'dosis': dosisMl,
-          'via_aplicacion': viaAplicacion,
-          'fecha': fecha.toIso8601String().split('T').first,
-          'dias_retiro': diasRetiro,
-        },
+        payload: offlinePayload,
         description: 'Sanidad #$porcinoId: $medicamento ($dosisMl ml)',
       );
       return Right(localEntity);

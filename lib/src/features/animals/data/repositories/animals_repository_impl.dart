@@ -125,17 +125,22 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
       diasEnFase: 1,
     );
 
+    final resolvedCorralUuid = LoteModel.resolveUuid(loteId);
+    final offlineAnimalPayload = <String, dynamic>{
+      'codigo_arete': codigo,
+      'codigo': codigo,
+      'raza': raza,
+      'sexo': sexo.toLowerCase().contains('macho') ? 'macho' : 'hembra',
+      'fecha_nacimiento': fechaNacimiento.toIso8601String().split('T').first,
+      if (resolvedCorralUuid != null) 'corral_id': resolvedCorralUuid,
+      'lote': loteId,
+    };
+
     if (cacheService.isOfflineModeEnabled()) {
       await cacheService.enqueueSyncItem(
-        endpoint: '/api/porcinos/',
+        endpoint: '/animales',
         method: 'POST',
-        payload: {
-          'codigo': codigo,
-          'raza': raza,
-          'sexo': sexo,
-          'fecha_nacimiento': fechaNacimiento.toIso8601String().split('T').first,
-          'lote': loteId,
-        },
+        payload: offlineAnimalPayload,
         description: 'Registro de porcino arete $codigo',
       );
       _addPorcinoToCache(newModel);
@@ -154,15 +159,9 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
       return Right(remote);
     } on AppException {
       await cacheService.enqueueSyncItem(
-        endpoint: '/api/porcinos/',
+        endpoint: '/animales',
         method: 'POST',
-        payload: {
-          'codigo': codigo,
-          'raza': raza,
-          'sexo': sexo,
-          'fecha_nacimiento': fechaNacimiento.toIso8601String().split('T').first,
-          'lote': loteId,
-        },
+        payload: offlineAnimalPayload,
         description: 'Registro de porcino arete $codigo',
       );
       _addPorcinoToCache(newModel);
@@ -210,16 +209,31 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
       galpon: galpon,
     );
 
+    final f = fase.toLowerCase();
+    String tipoEtapa = 'engorde';
+    if (f.contains('gesta')) {
+      tipoEtapa = 'gestacion';
+    } else if (f.contains('mater') || f.contains('lacta')) {
+      tipoEtapa = 'maternidad';
+    } else if (f.contains('deste') || f.contains('prece')) {
+      tipoEtapa = 'destete';
+    } else if (f.contains('cuaren')) {
+      tipoEtapa = 'cuarentena';
+    }
+
+    final offlineLotePayload = <String, dynamic>{
+      'codigo': codigo,
+      'nombre': nombre.isNotEmpty ? nombre : codigo,
+      'ubicacion_galpon': galpon,
+      'tipo_etapa': tipoEtapa,
+      'capacidad_maxima': 25,
+    };
+
     if (cacheService.isOfflineModeEnabled()) {
       await cacheService.enqueueSyncItem(
-        endpoint: '/api/lotes/',
+        endpoint: '/corrales',
         method: 'POST',
-        payload: {
-          'codigo': codigo,
-          'nombre': nombre,
-          'fase': fase,
-          'galpon': galpon,
-        },
+        payload: offlineLotePayload,
         description: 'Creación de lote $codigo ($nombre)',
       );
       return Right(model);
@@ -235,14 +249,9 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
       return Right(remote);
     } on AppException {
       await cacheService.enqueueSyncItem(
-        endpoint: '/api/lotes/',
+        endpoint: '/corrales',
         method: 'POST',
-        payload: {
-          'codigo': codigo,
-          'nombre': nombre,
-          'fase': fase,
-          'galpon': galpon,
-        },
+        payload: offlineLotePayload,
         description: 'Creación de lote $codigo ($nombre)',
       );
       return Right(model);

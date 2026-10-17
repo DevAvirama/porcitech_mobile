@@ -12,12 +12,14 @@ import 'package:porcitech_mobile/src/features/weight_estimation/presentation/con
 /// frente a estándares de Porkcolombia y confirmación veloz en corral.
 class RegistrarPesajePorcitech extends ConsumerStatefulWidget {
   final PorcinoEntity porcino;
+  final double? initialWeight;
   final VoidCallback onOpenCapturaIa;
   final VoidCallback onPesajeGuardado;
 
   const RegistrarPesajePorcitech({
     super.key,
     required this.porcino,
+    this.initialWeight,
     required this.onOpenCapturaIa,
     required this.onPesajeGuardado,
   });
@@ -29,13 +31,16 @@ class RegistrarPesajePorcitech extends ConsumerStatefulWidget {
 
 class _RegistrarPesajePorcitechState
     extends ConsumerState<RegistrarPesajePorcitech> {
-  String _inputWeight = '82.5';
+  late String _inputWeight;
   late final double _pesoAnterior;
   late final DateTime _fechaAnterior;
 
   @override
   void initState() {
     super.initState();
+    _inputWeight = widget.initialWeight != null
+        ? widget.initialWeight!.toStringAsFixed(1)
+        : '82.5';
     _pesoAnterior = widget.porcino.pesoActual > 10.0
         ? widget.porcino.pesoActual - 8.2
         : widget.porcino.pesoActual;

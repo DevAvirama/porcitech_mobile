@@ -71,10 +71,12 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
           setState(() => _isProcessingCode = false);
         }
       },
-      (porcino) {
+      (porcino) async {
         if (mounted) {
-          setState(() => _isProcessingCode = false);
-          _showSlideUpSheet(porcino);
+          await _showSlideUpSheet(porcino);
+          if (mounted) {
+            setState(() => _isProcessingCode = false);
+          }
         }
       },
     );
@@ -111,8 +113,8 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
     );
   }
 
-  void _showSlideUpSheet(PorcinoEntity porcino) {
-    showModalBottomSheet(
+  Future<void> _showSlideUpSheet(PorcinoEntity porcino) {
+    return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
