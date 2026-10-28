@@ -8,7 +8,6 @@ import 'package:porcitech_mobile/src/features/auth/presentation/controllers/auth
 import 'package:porcitech_mobile/src/features/dashboard/presentation/controllers/dashboard_controller.dart';
 
 /// Pantalla Principal: Dashboard de Campo (`dashboard_de_campo_porcitech`).
-/// Centro de mando táctil para operarios y zootecnistas en corrales.
 class DashboardDeCampoPorcitech extends ConsumerWidget {
   final VoidCallback onScanQr;
   final VoidCallback onOpenPesaje;
@@ -37,63 +36,59 @@ class DashboardDeCampoPorcitech extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        titleSpacing: 16,
+        title: Row(
           children: [
-            const Text(
-              'PorciTech • Campo',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.slateDark,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.agriculture_rounded,
+                color: Colors.white,
+                size: 20,
               ),
             ),
-            Text(
-              authState.user?.granja ?? 'Granja San Jerónimo • Galpón 4',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: AppColors.slateMuted,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          // Indicador de Estado de Conexión / Modo Offline
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            margin: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              color: isOffline ? AppColors.warningLight : AppColors.mintSoft,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isOffline ? AppColors.warningOrange : AppColors.mintBorder,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isOffline ? Icons.cloud_off : Icons.cloud_done,
-                  size: 16,
-                  color: isOffline ? AppColors.warningOrange : AppColors.primaryDark,
-                ),
-                const SizedBox(width: 5),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
                 Text(
-                  isOffline ? 'Offline' : 'Online',
+                  'PORCITECH',
                   style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: isOffline ? AppColors.warningOrange : AppColors.primaryDark,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.primary,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                Text(
+                  'Field Overview',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.slateDark,
                   ),
                 ),
               ],
             ),
-          ),
+          ],
+        ),
+        actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined, color: AppColors.slateDark),
-            tooltip: 'Ajustes y Sincronización',
             onPressed: onOpenAjustes,
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: const BoxDecoration(
+                color: AppColors.primaryDark,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.person, color: Colors.white, size: 18),
+            ),
           ),
           const SizedBox(width: 8),
         ],
@@ -107,210 +102,227 @@ class DashboardDeCampoPorcitech extends ConsumerWidget {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Banner de Cola Pendiente si hay registros offline ---
-              if (summary != null && summary.registrosPendientesSync > 0) ...[
+              if (isOffline) ...[
                 Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
                     color: AppColors.warningLight,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: AppColors.warningOrange),
                   ),
                   child: Row(
-                    children: [
-                      const Icon(Icons.sync_problem_rounded, color: AppColors.warningOrange, size: 22),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          '${summary.registrosPendientesSync} registros guardados en local listos para sincronizar.',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF92400E),
-                          ),
-                        ),
+                    children: const [
+                      Icon(
+                        Icons.cloud_off,
+                        color: AppColors.warningOrange,
+                        size: 18,
                       ),
-                      TextButton(
-                        onPressed: onOpenAjustes,
-                        child: const Text('Ver Cola', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.warningOrange)),
+                      SizedBox(width: 8),
+                      Text(
+                        'Modo Offline activo • Los cambios se guardarán localmente',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.warningOrange,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ],
 
-              // --- ACCESO DESTACADO: Escanear QR / RFID ---
+              // Encabezado
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Hola, ${authState.user?.email.split('@').first ?? "Operador"}',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.slateDark,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.badge_outlined,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Botón Principal Gigante
               Material(
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: onScanQr,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 18,
+                    ),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF047857), Color(0xFF059669)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(18),
+                      color: AppColors.primaryDark,
+                      borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.3),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
+                          color: AppColors.primaryDark.withValues(alpha: 0.25),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(14),
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(14),
+                            color: Colors.white.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white30, width: 1),
                           ),
                           child: const Icon(
                             Icons.qr_code_scanner_rounded,
-                            size: 36,
                             color: Colors.white,
+                            size: 28,
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        const Expanded(
+                        const SizedBox(width: 14),
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+                            children: const [
                               Text(
-                                'ESCANEAR QR / RFID',
+                                'Escanear QR / RFID',
                                 style: TextStyle(
+                                  color: Colors.white,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                  letterSpacing: 0.5,
                                 ),
                               ),
-                              SizedBox(height: 4),
+                              SizedBox(height: 2),
                               Text(
-                                'Identificación y Ficha Rápida del Porcino',
+                                'LECTURA RÁPIDA • LECTOR ACTIVO',
                                 style: TextStyle(
-                                  fontSize: 13,
-                                  color: Color(0xFFDCFCE7),
-                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.mintSoft,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.3,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          color: Colors.white,
-                          size: 20,
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
-              // --- MÉTRICAS PRINCIPALES DEL GALPÓN ---
-              const Text(
-                'Estado Operativo del Hato',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.slateHeading,
-                ),
-              ),
-              const SizedBox(height: 12),
-
+              // Métricas
               if (dashboardState.isLoading && summary == null) ...[
                 Row(
                   children: const [
-                    Expanded(child: SkeletonLoader(width: double.infinity, height: 100)),
+                    Expanded(
+                      child: SkeletonLoader(width: double.infinity, height: 95),
+                    ),
                     SizedBox(width: 12),
-                    Expanded(child: SkeletonLoader(width: double.infinity, height: 100)),
+                    Expanded(
+                      child: SkeletonLoader(width: double.infinity, height: 95),
+                    ),
                   ],
                 ),
-              ] else if (dashboardState.errorMessage != null && summary == null) ...[
+              ] else if (dashboardState.errorMessage != null &&
+                  summary == null) ...[
                 ErrorBanner(
                   message: dashboardState.errorMessage!,
-                  onRetry: () => ref.read(dashboardNotifierProvider.notifier).loadSummary(),
+                  onRetry: () => ref
+                      .read(dashboardNotifierProvider.notifier)
+                      .loadSummary(),
                 ),
               ] else ...[
                 Row(
                   children: [
-                    // Métrica 1: Total Porcinos
                     Expanded(
-                      child: _buildMetricCard(
-                        title: 'Total Porcinos',
+                      child: _MetricCard(
+                        title: 'ANIMALES\nTOTAL',
                         value: '${summary?.totalPorcinos ?? 1420}',
-                        subtitle: 'Población activa',
-                        icon: Icons.pets_rounded,
-                        accentColor: AppColors.primary,
-                        bgColor: Colors.white,
+                        subtitle: 'Pabellones A-D',
+                        icon: Icons.pets_outlined,
+                        iconBgColor: const Color(0xFFEFF6FF),
+                        iconColor: AppColors.secondary,
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // Métrica 2: Alertas Sanitarias
                     Expanded(
-                      child: _buildMetricCard(
-                        title: 'Alertas Sanitarias',
+                      child: _MetricCard(
+                        title: 'ALERTAS HOY',
                         value: '${summary?.alertasSanitarias ?? 3}',
-                        subtitle: 'Retiro / Tratamiento',
-                        icon: Icons.medical_services_outlined,
-                        accentColor: AppColors.alertRedDark,
-                        bgColor: (summary?.alertasSanitarias ?? 0) > 0
-                            ? AppColors.alertRedLight
-                            : Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildMetricCard(
-                        title: 'GDP Promedio',
-                        value: '+${(summary?.gdpPromedioGramoDia ?? 835).toStringAsFixed(0)} g',
-                        subtitle: 'Meta Porkcolombia',
-                        icon: Icons.trending_up_rounded,
-                        accentColor: AppColors.secondary,
-                        bgColor: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildMetricCard(
-                        title: 'En Ceba / Gestación',
-                        value: '${summary?.porcinosEnCeba ?? 860} / ${summary?.hembrasGestacion ?? 310}',
-                        subtitle: 'Lotes en curso',
-                        icon: Icons.grid_view_rounded,
-                        accentColor: AppColors.slateHeading,
-                        bgColor: Colors.white,
+                        statusBadge: 'PENDIENTE',
+                        subtitle: '2 Cuarentena • 1 Dosis',
+                        icon: Icons.notifications_active_outlined,
+                        iconBgColor: AppColors.alertRedLight,
+                        iconColor: AppColors.alertRedDark,
+                        isAlert: true,
                       ),
                     ),
                   ],
                 ),
               ],
+              const SizedBox(height: 24),
 
-              const SizedBox(height: 28),
-
-              // --- CUADRÍCULA DE 4 ACCESOS RÁPIDOS DE CAMPO ---
-              const Text(
-                'Módulos y Operaciones en Corral',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.slateHeading,
-                ),
+              // Operaciones
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: const [
+                  Text(
+                    'OPERACIONES DE NAVE',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.slateMuted,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  Text(
+                    'Modo Guantes',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.slateMuted,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
 
               GridView.count(
                 crossAxisCount: 2,
@@ -320,61 +332,110 @@ class DashboardDeCampoPorcitech extends ConsumerWidget {
                 crossAxisSpacing: 14,
                 childAspectRatio: 1.15,
                 children: [
-                  _buildQuickAccessCard(
-                    title: 'Pesaje y Visión IA',
-                    description: 'Teclado gigante y captura cenital',
-                    icon: Icons.scale_rounded,
-                    color: AppColors.primary,
+                  _ActionButton(
+                    title: 'Pesaje',
+                    subtitle: 'Báscula y ganancia',
+                    icon: Icons.hourglass_empty_rounded,
+                    iconBgColor: const Color(0xFFEFF6FF),
+                    iconColor: AppColors.secondary,
                     onTap: onOpenPesaje,
                   ),
-                  _buildQuickAccessCard(
-                    title: 'Kárdex Sanitario',
-                    description: 'Vacunación y tiempos de retiro',
-                    icon: Icons.vaccines_rounded,
-                    color: AppColors.alertRedDark,
+                  _ActionButton(
+                    title: 'Sanidad',
+                    subtitle: 'Dosis y tratamientos',
+                    icon: Icons.vaccines_outlined,
+                    iconBgColor: const Color(0xFFCCFBF1),
+                    iconColor: const Color(0xFF0D9488),
                     onTap: onOpenSanidad,
                   ),
-                  _buildQuickAccessCard(
-                    title: 'Partos y Cerda',
-                    description: 'Vivos, muertos, momias y camada',
-                    icon: Icons.child_care_rounded,
-                    color: const Color(0xFF7E22CE), // Púrpura reproducción
+                  _ActionButton(
+                    title: 'Partos',
+                    subtitle: 'Maternidad y lechigadas',
+                    icon: Icons.face_outlined,
+                    iconBgColor: const Color(0xFFF3E8FF),
+                    iconColor: const Color(0xFF7E22CE),
                     onTap: onOpenPartos,
                   ),
-                  _buildQuickAccessCard(
-                    title: 'Lotes y Porcinos',
-                    description: 'Expediente, aretes y filtros',
-                    icon: Icons.folder_shared_rounded,
-                    color: AppColors.secondary,
+                  _ActionButton(
+                    title: 'Lotes',
+                    subtitle: 'Corrales y traslados',
+                    icon: Icons.grid_view_outlined,
+                    iconBgColor: AppColors.mintSoft,
+                    iconColor: AppColors.primary,
                     onTap: onOpenLotes,
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
             ],
           ),
         ),
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 0,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.slateMuted,
+        selectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 10,
+        ),
+        unselectedLabelStyle: const TextStyle(fontSize: 10),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.grid_view_rounded),
+            label: 'Overview',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.table_chart_outlined),
+            label: 'Pens',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.hourglass_empty_rounded),
+            label: 'Feed',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.local_hospital_outlined),
+            label: 'Health',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_outlined),
+            label: 'Profile',
+          ),
+        ],
+      ),
     );
   }
+}
 
-  Widget _buildMetricCard({
-    required String title,
-    required String value,
-    required String subtitle,
-    required IconData icon,
-    required Color accentColor,
-    required Color bgColor,
-  }) {
+class _MetricCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String? statusBadge;
+  final String subtitle;
+  final IconData icon;
+  final Color iconBgColor;
+  final Color iconColor;
+  final bool isAlert;
+
+  const _MetricCard({
+    required this.title,
+    required this.value,
+    this.statusBadge,
+    required this.subtitle,
+    required this.icon,
+    required this.iconBgColor,
+    required this.iconColor,
+    this.isAlert = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: bgColor,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: bgColor == Colors.white ? const Color(0xFFE2E8F0) : accentColor.withValues(alpha: 0.3),
-          width: 1.2,
-        ),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,45 +446,92 @@ class DashboardDeCampoPorcitech extends ConsumerWidget {
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
                   color: AppColors.slateMuted,
+                  height: 1.1,
                 ),
               ),
-              Icon(icon, size: 20, color: accentColor),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: iconColor, size: 18),
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: accentColor == AppColors.alertRedDark ? AppColors.alertRedDark : AppColors.slateDark,
-              letterSpacing: -0.5,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.slateDark,
+                ),
+              ),
+              if (statusBadge != null) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.alertRedLight,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    statusBadge!,
+                    style: const TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.alertRedDark,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             subtitle,
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: accentColor == AppColors.alertRedDark ? AppColors.alertRedDark : AppColors.slateMuted,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: isAlert ? AppColors.alertRedDark : AppColors.slateMuted,
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildQuickAccessCard({
-    required String title,
-    required String description,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
+class _ActionButton extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color iconBgColor;
+  final Color iconColor;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.iconBgColor,
+    required this.iconColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
@@ -431,46 +539,39 @@ class DashboardDeCampoPorcitech extends ConsumerWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
+                  color: iconBgColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, size: 28, color: color),
+                child: Icon(icon, color: iconColor, size: 24),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.slateDark,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.slateMuted,
-                      height: 1.2,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.slateDark,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: AppColors.slateMuted,
+                ),
               ),
             ],
           ),
