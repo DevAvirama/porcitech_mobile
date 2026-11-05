@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:porcitech_mobile/src/core/theme/app_colors.dart';
-import 'package:porcitech_mobile/src/core/widgets/status_badge.dart';
 import 'package:porcitech_mobile/src/core/widgets/tactile_button.dart';
 import 'package:porcitech_mobile/src/features/animals/domain/entities/porcino_entity.dart';
 import 'package:porcitech_mobile/src/features/animals/presentation/controllers/animals_controller.dart';
 
 /// Pantalla: Escaneo QR / RFID y Ficha Rápida (`escaneo_qr_detalle_rapido`).
-/// Visor de cámara con marco verde esmeralda y Slide-Up Sheet con expediente emergente.
 class EscaneoQrDetalleRapido extends ConsumerStatefulWidget {
   final void Function(PorcinoEntity porcino) onOpenDetalleCompleto;
   final void Function(PorcinoEntity porcino) onOpenPesaje;
@@ -87,7 +85,8 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Ingreso Manual de Arete', style: TextStyle(fontWeight: FontWeight.w700)),
+        title: const Text('Ingreso Manual de Arete',
+            style: TextStyle(fontWeight: FontWeight.w700)),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -119,137 +118,321 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 16,
+              offset: Offset(0, -4),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Handle superior
             Center(
               child: Container(
-                width: 44,
-                height: 5,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.slateBorder,
-                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
+
+            // Encabezado e Insignia del Lote
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: AppColors.mintSoft,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(Icons.check_circle_outline, color: AppColors.primaryDark, size: 30),
-                ),
-                const SizedBox(width: 14),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            porcino.codigo,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.slateDark,
-                            ),
-                          ),
-                          StatusBadge.fromStatus(porcino.estadoSanitario),
-                        ],
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.mintSoft,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(
+                          Icons.loyalty,
+                          color: AppColors.primaryDark,
+                          size: 26,
+                        ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${porcino.raza} • ${porcino.sexo} • ${porcino.loteNombre}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.slateMuted,
-                          fontWeight: FontWeight.w500,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  'Porcino #${porcino.id}',
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.slateDark,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                const CircleAvatar(
+                                  radius: 4,
+                                  backgroundColor: AppColors.primary,
+                                ),
+                              ],
+                            ),
+                            Text(
+                              'ID Electrónico: ${porcino.codigo}',
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.slateMuted,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCAEAD6),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    porcino.loteNombre.toUpperCase(),
+                    style: const TextStyle(
+                      color: Color(0xFF042014),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
               ],
             ),
-            const Divider(height: 24),
+            const SizedBox(height: 16),
+
+            // Tarjetas de Métricas Rápidas (Peso Actual y Edad)
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildSheetMetric('Peso Actual', '${porcino.pesoActual} kg'),
-                _buildSheetMetric('GDP', '+${porcino.gdpActualGramoDia.toInt()} g/d'),
-                _buildSheetMetric('Fase', porcino.fase),
-                _buildSheetMetric('Edad', '${porcino.edadEnDias} d'),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: const [
+                            Text(
+                              'PESO ACTUAL',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.slateMuted,
+                              ),
+                            ),
+                            Icon(Icons.scale,
+                                size: 16, color: AppColors.slateMuted),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '${porcino.pesoActual}',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.slateDark,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'kg',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.slateMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.trending_up,
+                                size: 14, color: AppColors.primary),
+                            const SizedBox(width: 4),
+                            Text(
+                              '+${porcino.gdpActualGramoDia.toInt()} g/día',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: const [
+                            Text(
+                              'EDAD',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.slateMuted,
+                              ),
+                            ),
+                            Icon(Icons.calendar_today,
+                                size: 16, color: AppColors.slateMuted),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '${(porcino.edadEnDias / 7).round()}',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.slateDark,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'sem',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.slateMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.event_repeat,
+                                size: 14, color: AppColors.slateMuted),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                'Fase ${porcino.fase}',
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.slateMuted,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
+
+            // Botón 1: Registrar Peso
             TactileButton(
-              text: 'Ver Expediente Completo',
-              icon: Icons.folder_open_rounded,
+              text: 'Registrar Peso',
+              icon: Icons.scale_rounded,
+              onPressed: () {
+                Navigator.pop(ctx);
+                widget.onOpenPesaje(porcino);
+              },
+            ),
+            const SizedBox(height: 10),
+
+            // Botón 2: Aplicar Vacuna
+            TactileButton(
+              text: 'Aplicar Vacuna',
+              icon: Icons.vaccines_rounded,
+              type: TactileButtonType.secondary,
+              onPressed: () {
+                Navigator.pop(ctx);
+                widget.onOpenSanidad(porcino);
+              },
+            ),
+            const SizedBox(height: 8),
+
+            // Botón 3: Expediente Completo
+            TextButton.icon(
               onPressed: () {
                 Navigator.pop(ctx);
                 widget.onOpenDetalleCompleto(porcino);
               },
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: TactileButton(
-                    text: 'Pesaje',
-                    icon: Icons.scale_rounded,
-                    type: TactileButtonType.secondary,
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      widget.onOpenPesaje(porcino);
-                    },
-                  ),
+              icon: const Icon(Icons.folder_open_rounded,
+                  size: 18, color: AppColors.slateMuted),
+              label: const Text(
+                'Ver Expediente Completo',
+                style: TextStyle(
+                  color: AppColors.slateMuted,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: TactileButton(
-                    text: 'Sanidad',
-                    icon: Icons.vaccines_rounded,
-                    type: TactileButtonType.outline,
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      widget.onOpenSanidad(porcino);
-                    },
+              ),
+            ),
+            const SizedBox(height: 6),
+
+            // Ubicación del galpón
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.domain, size: 14, color: AppColors.slateMuted),
+                const SizedBox(width: 6),
+                Text(
+                  '${porcino.loteNombre} • Densidad Óptima',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.slateMuted,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildSheetMetric(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, color: AppColors.slateMuted, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.slateDark),
-        ),
-      ],
     );
   }
 
@@ -271,7 +454,8 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
             onPressed: () => _scannerController.toggleTorch(),
           ),
           IconButton(
-            icon: const Icon(Icons.flip_camera_ios_rounded, color: Colors.white),
+            icon:
+                const Icon(Icons.flip_camera_ios_rounded, color: Colors.white),
             tooltip: 'Cambiar Cámara',
             onPressed: () => _scannerController.switchCamera(),
           ),
@@ -322,7 +506,8 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
                             color: AppColors.primaryLight,
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primaryLight.withValues(alpha: 0.8),
+                                color: AppColors.primaryLight
+                                    .withValues(alpha: 0.8),
                                 blurRadius: 8,
                                 spreadRadius: 2,
                               ),
@@ -343,11 +528,13 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
             child: Column(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.75),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.slateMuted.withValues(alpha: 0.5)),
+                    border: Border.all(
+                        color: AppColors.slateMuted.withValues(alpha: 0.5)),
                   ),
                   child: const Text(
                     'Enfoque el código QR del arete del porcino o use el teclado superior si el arete está sucio.',
