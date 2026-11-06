@@ -36,7 +36,7 @@ class ReproductionRemoteDataSourceImpl implements ReproductionRemoteDataSource {
     try {
       final resolvedHembraUuid = PorcinoModel.resolveUuid(porcinoId);
       final payload = {
-        if (resolvedHembraUuid != null) 'hembra_id': resolvedHembraUuid,
+        'hembra_id': ?resolvedHembraUuid,
         'porcino': porcinoId,
         'tipo': 'parto',
         'fecha_parto': fecha.toIso8601String(),

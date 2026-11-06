@@ -43,7 +43,7 @@ class HealthRemoteDataSourceImpl implements HealthRemoteDataSource {
       final responseEvento = await _client.post(
         ApiConstants.eventosSanitarios,
         data: {
-          if (resolvedAnimalUuid != null) 'animal_id': resolvedAnimalUuid,
+          'animal_id': ?resolvedAnimalUuid,
           'porcino': porcinoId,
           'tipo_evento': tipo.toLowerCase(),
           'tipo': tipo,

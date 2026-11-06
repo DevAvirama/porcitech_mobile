@@ -36,8 +36,8 @@ class WeightRemoteDataSourceImpl implements WeightRemoteDataSource {
       final resolvedAnimalUuid = PorcinoModel.resolveUuid(porcinoId);
       final resolvedCorralUuid = PorcinoModel.resolveCorralUuid(porcinoId);
       final payload = {
-        if (resolvedAnimalUuid != null) 'id_cerdo': resolvedAnimalUuid,
-        if (resolvedCorralUuid != null) 'corral_id': resolvedCorralUuid,
+        'id_cerdo': ?resolvedAnimalUuid,
+        'corral_id': ?resolvedCorralUuid,
         'peso_kg': peso,
         'porcino': porcinoId,
         'peso': peso,
@@ -90,8 +90,8 @@ class WeightRemoteDataSourceImpl implements WeightRemoteDataSource {
       final resolvedAnimalUuid = PorcinoModel.resolveUuid(porcinoId);
       final resolvedCorralUuid = PorcinoModel.resolveCorralUuid(porcinoId);
       final formData = FormData.fromMap({
-        if (resolvedAnimalUuid != null) 'id_cerdo': resolvedAnimalUuid,
-        if (resolvedCorralUuid != null) 'corral_id': resolvedCorralUuid,
+        'id_cerdo': ?resolvedAnimalUuid,
+        'corral_id': ?resolvedCorralUuid,
         'porcino': porcinoId.toString(),
         'file': await MultipartFile.fromFile(
           imagenCenital.path,

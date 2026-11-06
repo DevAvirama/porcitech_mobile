@@ -36,8 +36,8 @@ class WeightRepositoryImpl implements WeightRepository {
     final resolvedAnimalUuid = PorcinoModel.resolveUuid(porcinoId);
     final resolvedCorralUuid = PorcinoModel.resolveCorralUuid(porcinoId);
     final offlinePayload = <String, dynamic>{
-      if (resolvedAnimalUuid != null) 'animal_id': resolvedAnimalUuid,
-      if (resolvedCorralUuid != null) 'corral_id': resolvedCorralUuid,
+      'animal_id': ?resolvedAnimalUuid,
+      'corral_id': ?resolvedCorralUuid,
       'porcino': porcinoId,
       'peso_kg': peso,
       'metodo_pesaje':

@@ -27,11 +27,11 @@ void main() {
     await tester.pump();
 
     // Valida cabecera corporativa y campos de login de campo
-    expect(find.text('PorciTech'), findsOneWidget);
-    expect(find.text('Sistema Integral Porcino • Operaciones de Campo'), findsOneWidget);
-    expect(find.text('Usuario o Correo Institucional'), findsOneWidget);
-    expect(find.text('Contraseña de Acceso'), findsOneWidget);
-    expect(find.text('Modo Offline en Granja'), findsOneWidget);
-    expect(find.text('Conectado a la API REST de FastAPI'), findsOneWidget);
+    expect(find.text('GESTIÓN PORCINA EN CAMPO'), findsOneWidget);
+    expect(find.text('ACCESO DE OPERADOR DE GALPÓN'), findsOneWidget);
+    expect(find.text('Correo electrónico'), findsOneWidget);
+    expect(find.text('Contraseña'), findsOneWidget);
+    expect(find.text('Modo Sin Conexión Activado'), findsOneWidget);
+    expect(find.text('PORCITECH MOBILE V1.0 - SENA'), findsOneWidget);
   });
 }

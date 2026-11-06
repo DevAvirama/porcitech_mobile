@@ -43,8 +43,8 @@ class ReproductionRepositoryImpl implements ReproductionRepository {
     final resolvedHembraUuid = PorcinoModel.resolveUuid(porcinoId);
     final resolvedCorralUuid = PorcinoModel.resolveCorralUuid(porcinoId);
     final offlinePayload = <String, dynamic>{
-      if (resolvedHembraUuid != null) 'hembra_id': resolvedHembraUuid,
-      if (resolvedCorralUuid != null) 'corral_maternidad_id': resolvedCorralUuid,
+      'hembra_id': ?resolvedHembraUuid,
+      'corral_maternidad_id': ?resolvedCorralUuid,
       'porcino': porcinoId,
       'fecha_parto': fecha.toIso8601String(),
       'nacidos_vivos': nacidosVivos,

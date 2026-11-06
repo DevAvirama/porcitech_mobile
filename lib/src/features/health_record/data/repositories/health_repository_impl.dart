@@ -54,8 +54,8 @@ class HealthRepositoryImpl implements HealthRepository {
             : 'medicacion';
 
     final offlinePayload = <String, dynamic>{
-      if (resolvedAnimalUuid != null) 'animal_id': resolvedAnimalUuid,
-      if (resolvedCorralUuid != null) 'corral_id': resolvedCorralUuid,
+      'animal_id': ?resolvedAnimalUuid,
+      'corral_id': ?resolvedCorralUuid,
       'porcino': porcinoId,
       'tipo_evento': tipoEvento,
       'producto_nombre': medicamento,

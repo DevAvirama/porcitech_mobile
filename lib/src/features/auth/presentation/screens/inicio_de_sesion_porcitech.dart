@@ -437,7 +437,7 @@ class _InicioDeSesionPorcitechState
                         ),
                         Switch.adaptive(
                           value: isOffline,
-                          activeColor: primaryGreen,
+                          activeTrackColor: primaryGreen,
                           onChanged: (val) {
                             ref
                                 .read(offlineModeProvider.notifier)

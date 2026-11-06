@@ -132,7 +132,7 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
       'raza': raza,
       'sexo': sexo.toLowerCase().contains('macho') ? 'macho' : 'hembra',
       'fecha_nacimiento': fechaNacimiento.toIso8601String().split('T').first,
-      if (resolvedCorralUuid != null) 'corral_id': resolvedCorralUuid,
+      'corral_id': ?resolvedCorralUuid,
       'lote': loteId,
     };
 
