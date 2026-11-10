@@ -23,16 +23,22 @@ class DashboardRepositoryImpl implements DashboardRepository {
     if (cacheService.isOfflineModeEnabled()) {
       final cachedJson = cacheService.getCachedJson(cacheService.keyCachedDashboard);
       if (cachedJson != null && cachedJson is Map<String, dynamic>) {
-        return Right(DashboardSummaryModel.fromJson(cachedJson, pendingSync: pendingCount));
+        return Right(
+          DashboardSummaryModel.fromJson(cachedJson, pendingSync: pendingCount),
+        );
       }
       return Right(
         DashboardSummaryModel(
-          totalPorcinos: 1420,
-          alertasSanitarias: 3,
-          porcinosEnCeba: 860,
-          hembrasGestacion: 310,
-          partosMes: 28,
-          gdpPromedioGramoDia: 835.0,
+          totalPorcinos: 64,
+          totalCorralesActivos: 3,
+          pesoPromedioGranjaKg: 74.5,
+          alertasSanitarias: 2,
+          alertasInventarioStock: 1,
+          tasaOcupacionPorcentaje: 71.0,
+          porcinosEnCeba: 52,
+          hembrasGestacion: 12,
+          partosMes: 4,
+          gdpPromedioGramoDia: 795.0,
           registrosPendientesSync: pendingCount,
         ),
       );
@@ -44,27 +50,39 @@ class DashboardRepositoryImpl implements DashboardRepository {
       return Right(
         DashboardSummaryModel(
           totalPorcinos: summary.totalPorcinos,
+          totalCorralesActivos: summary.totalCorralesActivos,
+          pesoPromedioGranjaKg: summary.pesoPromedioGranjaKg,
           alertasSanitarias: summary.alertasSanitarias,
+          alertasInventarioStock: summary.alertasInventarioStock,
+          tasaOcupacionPorcentaje: summary.tasaOcupacionPorcentaje,
           porcinosEnCeba: summary.porcinosEnCeba,
           hembrasGestacion: summary.hembrasGestacion,
           partosMes: summary.partosMes,
           gdpPromedioGramoDia: summary.gdpPromedioGramoDia,
           registrosPendientesSync: pendingCount,
+          alertas: summary.alertas,
+          actividadReciente: summary.actividadReciente,
         ),
       );
     } on AppException catch (_) {
       final cachedJson = cacheService.getCachedJson(cacheService.keyCachedDashboard);
       if (cachedJson != null && cachedJson is Map<String, dynamic>) {
-        return Right(DashboardSummaryModel.fromJson(cachedJson, pendingSync: pendingCount));
+        return Right(
+          DashboardSummaryModel.fromJson(cachedJson, pendingSync: pendingCount),
+        );
       }
       return Right(
         DashboardSummaryModel(
-          totalPorcinos: 1420,
-          alertasSanitarias: 3,
-          porcinosEnCeba: 860,
-          hembrasGestacion: 310,
-          partosMes: 28,
-          gdpPromedioGramoDia: 835.0,
+          totalPorcinos: 64,
+          totalCorralesActivos: 3,
+          pesoPromedioGranjaKg: 74.5,
+          alertasSanitarias: 2,
+          alertasInventarioStock: 1,
+          tasaOcupacionPorcentaje: 71.0,
+          porcinosEnCeba: 52,
+          hembrasGestacion: 12,
+          partosMes: 4,
+          gdpPromedioGramoDia: 795.0,
           registrosPendientesSync: pendingCount,
         ),
       );

@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:porcitech_mobile/src/core/constants/zootechnical_constants.dart';
 import 'package:porcitech_mobile/src/core/theme/app_colors.dart';
+import 'package:porcitech_mobile/src/core/widgets/brand_mark.dart';
 import 'package:porcitech_mobile/src/core/widgets/giant_numeric_keypad.dart';
+import 'package:porcitech_mobile/src/core/widgets/porcino_picker_sheet.dart';
 import 'package:porcitech_mobile/src/core/widgets/tactile_button.dart';
 import 'package:porcitech_mobile/src/features/animals/domain/entities/porcino_entity.dart';
 import 'package:porcitech_mobile/src/features/weight_estimation/presentation/controllers/weight_controller.dart';
 
 /// Pantalla: Registro de Pesaje Rápido (`registrar_pesaje_porcitech`).
-/// Teclado numérico gigante para guantes, cálculo automático de GDP (+820 g/día)
-/// frente a estándares de Porkcolombia y confirmación veloz en corral.
+/// Teclado numérico gigante para guantes, selector dinámico de ejemplar,
+/// cálculo automático de GDP y sincronización con `/pesajes/manual`.
 class RegistrarPesajePorcitech extends ConsumerStatefulWidget {
   final PorcinoEntity porcino;
   final double? initialWeight;
@@ -31,20 +33,34 @@ class RegistrarPesajePorcitech extends ConsumerStatefulWidget {
 
 class _RegistrarPesajePorcitechState
     extends ConsumerState<RegistrarPesajePorcitech> {
+  late PorcinoEntity _porcino;
   late String _inputWeight;
-  late final double _pesoAnterior;
+  late double _pesoAnterior;
   late final DateTime _fechaAnterior;
 
   @override
   void initState() {
     super.initState();
+    _porcino = widget.porcino;
     _inputWeight = widget.initialWeight != null
         ? widget.initialWeight!.toStringAsFixed(1)
-        : '82.5';
-    _pesoAnterior = widget.porcino.pesoActual > 10.0
-        ? widget.porcino.pesoActual - 8.2
-        : widget.porcino.pesoActual;
-    _fechaAnterior = DateTime.now().subtract(const Duration(days: 10));
+        : '0';
+    _pesoAnterior = _porcino.pesoActual;
+    _fechaAnterior = DateTime.now().subtract(const Duration(days: 7));
+  }
+
+  Future<void> _cambiarPorcino() async {
+    final picked = await PorcinoPickerSheet.show(
+      context,
+      title: 'Seleccionar Porcino para Pesaje',
+      subtitle: 'Elija el ejemplar a pesar en báscula o cámara cenital IA',
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _porcino = picked;
+        _pesoAnterior = picked.pesoActual;
+      });
+    }
   }
 
   void _onDigit(String d) {
@@ -75,7 +91,7 @@ class _RegistrarPesajePorcitechState
 
   double get _gdpCalculada {
     final w = _currentParsedWeight;
-    if (w <= 0) return 0.0;
+    if (w <= 0 || _pesoAnterior <= 0) return 0.0;
     return ZootechnicalConstants.calcularGdpGramosDia(
       pesoAnteriorKg: _pesoAnterior,
       pesoActualKg: w,
@@ -86,10 +102,10 @@ class _RegistrarPesajePorcitechState
 
   Future<void> _handleConfirmarPesaje() async {
     final pesoFinal = _currentParsedWeight;
-    if (pesoFinal <= 2.0 || pesoFinal > 450.0) {
+    if (pesoFinal <= 1.0 || pesoFinal > 450.0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Ingrese un peso válido entre 2.0 kg y 450.0 kg'),
+          content: Text('Ingrese un peso válido entre 1.0 kg y 450.0 kg'),
           backgroundColor: AppColors.alertRedDark,
         ),
       );
@@ -97,7 +113,9 @@ class _RegistrarPesajePorcitechState
     }
 
     final success = await ref.read(weightNotifierProvider.notifier).registrarPesaje(
-          porcinoId: widget.porcino.id,
+          porcinoId: _porcino.id,
+          animalUuid: _porcino.uuid,
+          corralUuid: _porcino.corralUuid,
           peso: pesoFinal,
           fecha: DateTime.now(),
           tipo: 'manual',
@@ -106,8 +124,10 @@ class _RegistrarPesajePorcitechState
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Pesaje de ${pesoFinal.toStringAsFixed(1)} kg guardado para ${widget.porcino.codigo}'),
-          backgroundColor: AppColors.primary,
+          content: Text(
+            'Pesaje de ${pesoFinal.toStringAsFixed(1)} kg guardado para ${_porcino.codigo}',
+          ),
+          backgroundColor: AppColors.senaGreen,
         ),
       );
       widget.onPesajeGuardado();
@@ -118,18 +138,33 @@ class _RegistrarPesajePorcitechState
   Widget build(BuildContext context) {
     final weightState = ref.watch(weightNotifierProvider);
     final gdp = _gdpCalculada;
-    final clasificacion = ZootechnicalConstants.clasificarDesempenoGdp(gdp, widget.porcino.fase);
+    final clasificacion =
+        ZootechnicalConstants.clasificarDesempenoGdp(gdp, _porcino.fase);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(
-          'Pesaje ${widget.porcino.codigo}',
-          style: const TextStyle(fontWeight: FontWeight.w800),
+        title: Row(
+          children: [
+            const BrandMark(compact: true),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Pesaje • ${_porcino.codigo}',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+            icon: const Icon(Icons.swap_horiz_rounded, color: AppColors.senaBlue),
+            tooltip: 'Cambiar Porcino',
+            onPressed: _cambiarPorcino,
+          ),
+          IconButton(
+            icon: const Icon(Icons.camera_alt_outlined, color: AppColors.senaGreen),
             tooltip: 'Estimar con Cámara IA',
             onPressed: widget.onOpenCapturaIa,
           ),
@@ -140,34 +175,56 @@ class _RegistrarPesajePorcitechState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // --- Ficha Rápida del Animal ---
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.pets, color: AppColors.primary, size: 28),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${widget.porcino.codigo} • ${widget.porcino.raza}',
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                        ),
-                        Text(
-                          'Peso Anterior: ${_pesoAnterior.toStringAsFixed(1)} kg hace 10 días (${widget.porcino.fase})',
-                          style: const TextStyle(fontSize: 12, color: AppColors.slateMuted),
-                        ),
-                      ],
+            // --- Ficha Rápida del Animal (táctil para cambiar animal) ---
+            InkWell(
+              onTap: _cambiarPorcino,
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.pets_rounded, color: AppColors.senaGreen, size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${_porcino.codigo} • ${_porcino.raza} (${_porcino.loteNombre})',
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.slateDark,
+                            ),
+                          ),
+                          Text(
+                            'Último peso registrado: ${_pesoAnterior.toStringAsFixed(1)} kg • Fase ${_porcino.fase}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.slateMuted,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    const Chip(
+                      label: Text(
+                        'Cambiar',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.senaBlue,
+                        ),
+                      ),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -178,10 +235,10 @@ class _RegistrarPesajePorcitechState
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.primary, width: 2),
+                border: Border.all(color: AppColors.senaGreen, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: AppColors.senaGreen.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -190,7 +247,7 @@ class _RegistrarPesajePorcitechState
               child: Column(
                 children: [
                   const Text(
-                    'PESO EN BÁSCULA',
+                    'LECTURA DE BÁSCULA DIGITAL',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
@@ -219,14 +276,12 @@ class _RegistrarPesajePorcitechState
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
+                          color: AppColors.senaGreen,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
-
-                  // --- Cálculo Automático de GDP en Vivo ---
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
@@ -237,12 +292,18 @@ class _RegistrarPesajePorcitechState
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.speed_rounded, size: 18, color: AppColors.primaryDark),
+                        const Icon(
+                          Icons.speed_rounded,
+                          size: 18,
+                          color: AppColors.primaryDark,
+                        ),
                         const SizedBox(width: 8),
                         Text(
-                          'GDP: ${gdp > 0 ? "+" : ""}${gdp.toInt()} g/día • $clasificacion',
+                          _currentParsedWeight > 0
+                              ? 'GDP estimada: ${gdp >= 0 ? "+" : ""}${gdp.toInt()} g/día • $clasificacion'
+                              : 'Digite el peso en kg o use la cámara cenital IA',
                           style: const TextStyle(
-                            fontSize: 13,
+                            fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                             color: AppColors.primaryDark,
                           ),
@@ -267,18 +328,17 @@ class _RegistrarPesajePorcitechState
             // --- BOTÓN CONFIRMAR PESAJE ---
             TactileButton(
               text: 'Confirmar y Guardar Pesaje',
-              icon: Icons.check_circle_outline_rounded,
+              icon: Icons.save_rounded,
               isLoading: weightState.isLoading,
               onPressed: _handleConfirmarPesaje,
             ),
             const SizedBox(height: 10),
 
-            // Acceso Alternativo a Visión IA
             OutlinedButton.icon(
-              icon: const Icon(Icons.auto_awesome, color: AppColors.secondary),
+              icon: const Icon(Icons.center_focus_strong_rounded, color: AppColors.senaBlue),
               label: const Text(
-                'Usar Estimación por Visión Artificial (YOLO)',
-                style: TextStyle(fontWeight: FontWeight.w700),
+                'Estimar Peso con Cámara Cenital (Visión IA)',
+                style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.senaBlue),
               ),
               onPressed: widget.onOpenCapturaIa,
             ),

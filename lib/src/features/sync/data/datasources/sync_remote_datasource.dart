@@ -35,14 +35,27 @@ class SyncRemoteDataSourceImpl implements SyncRemoteDataSource {
   String _normalizeEndpoint(String rawEndpoint) {
     switch (rawEndpoint) {
       case '/api/porcinos/':
+      case '/animales':
         return ApiConstants.porcinos;
       case '/api/lotes/':
+      case '/corrales':
         return ApiConstants.lotes;
       case '/api/eventos-sanitarios/':
+      case '/sanidad/tratamientos':
         return ApiConstants.eventosSanitarios;
+      case '/sanidad/bioseguridad/ejecuciones':
+        return ApiConstants.bioseguridadEjecuciones;
       case '/api/eventos-reproductivos/':
+      case '/reproduccion/partos':
         return ApiConstants.partos;
+      case '/reproduccion/servicios':
+        return ApiConstants.eventosReproductivos;
+      case '/reproduccion/destetes':
+        return ApiConstants.destetes;
+      case '/alimentacion/raciones':
+        return ApiConstants.raciones;
       case '/api/pesos/':
+      case '/pesajes/manual':
         return ApiConstants.pesos;
       default:
         return rawEndpoint.isNotEmpty ? rawEndpoint : ApiConstants.pesos;

@@ -21,9 +21,12 @@ class WeightRepositoryImpl implements WeightRepository {
   @override
   Future<Either<Failure, WeightRecordEntity>> registrarPesaje({
     required int porcinoId,
+    String? animalUuid,
+    String? corralUuid,
     required double peso,
     required DateTime fecha,
     required String tipo,
+    String? observaciones,
   }) async {
     final record = WeightRecordEntity(
       id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
@@ -33,16 +36,16 @@ class WeightRepositoryImpl implements WeightRepository {
       tipo: tipo,
     );
 
-    final resolvedAnimalUuid = PorcinoModel.resolveUuid(porcinoId);
-    final resolvedCorralUuid = PorcinoModel.resolveCorralUuid(porcinoId);
+    final resolvedAnimalUuid = animalUuid ?? PorcinoModel.resolveUuid(porcinoId);
+    final resolvedCorralUuid = corralUuid ?? PorcinoModel.resolveCorralUuid(porcinoId);
     final offlinePayload = <String, dynamic>{
-      'animal_id': ?resolvedAnimalUuid,
+      'id_cerdo': ?resolvedAnimalUuid,
       'corral_id': ?resolvedCorralUuid,
-      'porcino': porcinoId,
       'peso_kg': peso,
-      'metodo_pesaje':
-          tipo.toLowerCase().contains('ia') ? 'ia_vision' : 'bascula_digital',
+      'metodo': tipo.toLowerCase().contains('ia') ? 'ia_vision' : 'manual',
       'tiempo': fecha.toIso8601String(),
+      if (observaciones != null && observaciones.trim().isNotEmpty)
+        'observaciones': observaciones.trim(),
     };
 
     if (cacheService.isOfflineModeEnabled()) {
@@ -58,9 +61,12 @@ class WeightRepositoryImpl implements WeightRepository {
     try {
       final remote = await remoteDataSource.registrarPesaje(
         porcinoId: porcinoId,
+        animalUuid: resolvedAnimalUuid,
+        corralUuid: resolvedCorralUuid,
         peso: peso,
         fecha: fecha,
         tipo: tipo,
+        observaciones: observaciones,
       );
       return Right(remote);
     } on AppException {
@@ -79,25 +85,22 @@ class WeightRepositoryImpl implements WeightRepository {
   @override
   Future<Either<Failure, IaWeightEstimationResult>> estimarPesoPorIa({
     required int porcinoId,
+    String? animalUuid,
+    String? corralUuid,
     required File imagenCenital,
+    bool persistir = true,
   }) async {
     try {
       final result = await remoteDataSource.estimarPesoPorIa(
         porcinoId: porcinoId,
+        animalUuid: animalUuid,
+        corralUuid: corralUuid,
         imagenCenital: imagenCenital,
+        persistir: persistir,
       );
       return Right(result);
-    } on AppException catch (_) {
-      return Right(
-        IaWeightEstimationResult(
-          porcinoId: porcinoId,
-          pesoEstimado: 83.4,
-          unidad: 'kg',
-          metodo: 'ia_biometric_heuristic',
-          fecha: DateTime.now(),
-          confianzaIa: 0.92,
-        ),
-      );
+    } on AppException catch (e) {
+      return Left(ServerFailure(e.message, e.statusCode));
     } catch (e) {
       return Left(UnexpectedFailure(e.toString()));
     }

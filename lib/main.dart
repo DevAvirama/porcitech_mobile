@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'src/core/di/core_providers.dart';
 import 'src/core/theme/app_theme.dart';
+import 'src/core/widgets/porcino_picker_sheet.dart';
 import 'src/features/animals/domain/entities/porcino_entity.dart';
 import 'src/features/animals/presentation/controllers/animals_controller.dart';
 import 'src/features/animals/presentation/screens/detalle_porcino_4092_porcitech.dart';
@@ -13,6 +14,7 @@ import 'src/features/animals/presentation/screens/listado_de_lotes_y_porcinos_po
 import 'src/features/auth/presentation/controllers/auth_controller.dart';
 import 'src/features/auth/presentation/screens/inicio_de_sesion_porcitech.dart';
 import 'src/features/dashboard/presentation/screens/dashboard_de_campo_porcitech.dart';
+import 'src/features/feeding/presentation/screens/alimentacion_e_inventario_porcitech.dart';
 import 'src/features/health_record/presentation/screens/registro_de_vacunacion_porcitech.dart';
 import 'src/features/reproduction/presentation/screens/registro_de_parto_cerda_h_104.dart';
 import 'src/features/sync/presentation/screens/ajustes_de_cuenta_porcitech.dart';
@@ -41,14 +43,14 @@ Future<void> main() async {
   );
 }
 
-/// Aplicación principal de PorciTech (Sistema Integral Porcino).
+/// Aplicación principal de PorciTech (Sistema Integral de Gestión Porcina SENA).
 class PorciTechApp extends ConsumerWidget {
   const PorciTechApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: 'PorciTech Mobile',
+      title: 'SENA • PorciTech Mobile',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: const RootNavigationCoordinator(),
@@ -85,36 +87,31 @@ class MainDashboardFlow extends ConsumerStatefulWidget {
 }
 
 class _MainDashboardFlowState extends ConsumerState<MainDashboardFlow> {
-  // Porcino por defecto para accesos directos desde el Dashboard
-  PorcinoEntity _activePorcino = PorcinoEntity(
-    id: 4092,
-    codigo: 'POR-4092',
-    raza: 'Landrace x Pietrain',
-    sexo: 'Macho Castrado',
-    fechaNacimiento: DateTime.now().subtract(const Duration(days: 145)),
-    loteId: 3,
-    loteNombre: 'Lote Ceba 03',
-    pesoActual: 82.5,
-    estadoSanitario: 'Sano',
-    fase: 'Ceba',
-    gdpActualGramoDia: 820.0,
-    diasEnFase: 65,
-  );
+  PorcinoEntity? _activePorcino;
 
-  final PorcinoEntity _cerdaReproductora = PorcinoEntity(
-    id: 104,
-    codigo: 'CERDA-H-104',
-    raza: 'Landrace Puro',
-    sexo: 'Hembra',
-    fechaNacimiento: DateTime.now().subtract(const Duration(days: 480)),
-    loteId: 1,
-    loteNombre: 'Lote Reproductoras A',
-    pesoActual: 215.0,
-    estadoSanitario: 'Sana',
-    fase: 'Gestación',
-    gdpActualGramoDia: 380.0,
-    diasEnFase: 110,
-  );
+  PorcinoEntity _fallbackPorcino({bool female = false}) {
+    final all = ref.read(animalsNotifierProvider).porcinos;
+    if (female) {
+      final sow = all.where((p) => p.sexo.toLowerCase() == 'hembra').firstOrNull;
+      if (sow != null) return sow;
+    }
+    if (_activePorcino != null) return _activePorcino!;
+    if (all.isNotEmpty) return all.first;
+    return PorcinoEntity(
+      id: 4092,
+      codigo: female ? 'CERDA-H-104' : 'POR-4092',
+      raza: female ? 'Landrace' : 'Landrace x Pietrain',
+      sexo: female ? 'Hembra' : 'Macho',
+      fechaNacimiento: DateTime.now().subtract(const Duration(days: 145)),
+      loteId: 1,
+      loteNombre: female ? 'Corral Gestación' : 'Corral Ceba',
+      pesoActual: female ? 210.0 : 82.5,
+      estadoSanitario: 'Sano',
+      fase: female ? 'Gestación' : 'Ceba',
+      gdpActualGramoDia: 820.0,
+      diasEnFase: 65,
+    );
+  }
 
   void _navigateTo(Widget screen) {
     Navigator.of(context).push(
@@ -122,33 +119,78 @@ class _MainDashboardFlowState extends ConsumerState<MainDashboardFlow> {
     );
   }
 
+  Future<void> _selectAndOpenPesaje() async {
+    final picked = await PorcinoPickerSheet.show(
+      context,
+      title: 'Seleccionar Porcino para Pesaje',
+      subtitle: 'Elija un ejemplar del hato o escanee su arete QR',
+      onScanQr: _openScanner,
+    );
+    if (picked != null && mounted) {
+      setState(() => _activePorcino = picked);
+      _openPesajeScreen(picked);
+    }
+  }
+
+  Future<void> _selectAndOpenSanidad() async {
+    final picked = await PorcinoPickerSheet.show(
+      context,
+      title: 'Seleccionar Porcino para Sanidad',
+      subtitle: 'Elija el animal para aplicar vacuna o consultar kárdex',
+      onScanQr: _openScanner,
+    );
+    if (picked != null && mounted) {
+      setState(() => _activePorcino = picked);
+      _openSanidadScreen(picked);
+    }
+  }
+
+  Future<void> _selectAndOpenReproduccion() async {
+    final picked = await PorcinoPickerSheet.show(
+      context,
+      title: 'Seleccionar Hembra Reproductora',
+      subtitle: 'Elija la cerda para registrar parto, servicio o destete',
+      soloHembrasReproductoras: true,
+      onScanQr: _openScanner,
+    );
+    if (picked != null && mounted) {
+      setState(() => _activePorcino = picked);
+      _openPartoScreen(picked);
+    }
+  }
+
+  void _openScanner() {
+    _navigateTo(
+      EscaneoQrDetalleRapido(
+        onOpenDetalleCompleto: (porcino) {
+          setState(() => _activePorcino = porcino);
+          _navigateTo(
+            DetallePorcino4092Porcitech(
+              porcino: porcino,
+              onRegistrarPesaje: () => _openPesajeScreen(porcino),
+              onRegistrarSanidad: () => _openSanidadScreen(porcino),
+              onRegistrarParto: porcino.esHembraReproductora
+                  ? () => _openPartoScreen(porcino)
+                  : null,
+            ),
+          );
+        },
+        onOpenPesaje: _openPesajeScreen,
+        onOpenSanidad: _openSanidadScreen,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return DashboardDeCampoPorcitech(
-      onScanQr: () {
-        _navigateTo(
-          EscaneoQrDetalleRapido(
-            onOpenDetalleCompleto: (porcino) {
-              setState(() => _activePorcino = porcino);
-              _navigateTo(
-                DetallePorcino4092Porcitech(
-                  porcino: porcino,
-                  onRegistrarPesaje: () => _openPesajeScreen(porcino),
-                  onRegistrarSanidad: () => _openSanidadScreen(porcino),
-                  onRegistrarParto: porcino.esHembraReproductora
-                      ? () => _openPartoScreen(porcino)
-                      : null,
-                ),
-              );
-            },
-            onOpenPesaje: _openPesajeScreen,
-            onOpenSanidad: _openSanidadScreen,
-          ),
-        );
+      onScanQr: _openScanner,
+      onOpenPesaje: _selectAndOpenPesaje,
+      onOpenSanidad: _selectAndOpenSanidad,
+      onOpenPartos: _selectAndOpenReproduccion,
+      onOpenAlimentacion: () {
+        _navigateTo(const AlimentacionEInventarioPorcitech());
       },
-      onOpenPesaje: () => _openPesajeScreen(_activePorcino),
-      onOpenSanidad: () => _openSanidadScreen(_activePorcino),
-      onOpenPartos: () => _openPartoScreen(_cerdaReproductora),
       onOpenLotes: () {
         _navigateTo(
           ListadoDeLotesYPorcinosPorcitech(
@@ -179,19 +221,20 @@ class _MainDashboardFlowState extends ConsumerState<MainDashboardFlow> {
     );
   }
 
-  void _openPesajeScreen(PorcinoEntity porcino, {double? initialWeight}) {
+  void _openPesajeScreen(PorcinoEntity? porcino, {double? initialWeight}) {
+    final target = porcino ?? _fallbackPorcino();
     _navigateTo(
       RegistrarPesajePorcitech(
-        porcino: porcino,
+        porcino: target,
         initialWeight: initialWeight,
         onOpenCapturaIa: () {
           _navigateTo(
             CapturaCenitalScreen(
-              porcino: porcino,
+              porcino: target,
               onPesoAplicado: (pesoEstimado) {
                 ref.read(animalsNotifierProvider.notifier).fetchPorcinos();
                 Navigator.of(context).pop();
-                _openPesajeScreen(porcino, initialWeight: pesoEstimado);
+                _openPesajeScreen(target, initialWeight: pesoEstimado);
               },
             ),
           );
@@ -204,10 +247,11 @@ class _MainDashboardFlowState extends ConsumerState<MainDashboardFlow> {
     );
   }
 
-  void _openSanidadScreen(PorcinoEntity porcino) {
+  void _openSanidadScreen(PorcinoEntity? porcino) {
+    final target = porcino ?? _fallbackPorcino();
     _navigateTo(
       RegistroDeVacunacionPorcitech(
-        porcino: porcino,
+        porcino: target,
         onEventoGuardado: () {
           ref.read(animalsNotifierProvider.notifier).fetchPorcinos();
           Navigator.of(context).pop();
@@ -216,10 +260,11 @@ class _MainDashboardFlowState extends ConsumerState<MainDashboardFlow> {
     );
   }
 
-  void _openPartoScreen(PorcinoEntity sow) {
+  void _openPartoScreen(PorcinoEntity? sow) {
+    final target = sow ?? _fallbackPorcino(female: true);
     _navigateTo(
       RegistroDePartoCerdaH104(
-        cerda: sow,
+        cerda: target,
         onPartoGuardado: () {
           Navigator.of(context).pop();
         },

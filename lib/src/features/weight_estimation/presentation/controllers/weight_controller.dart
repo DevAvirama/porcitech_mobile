@@ -57,16 +57,22 @@ class WeightNotifier extends Notifier<WeightState> {
 
   Future<bool> registrarPesaje({
     required int porcinoId,
+    String? animalUuid,
+    String? corralUuid,
     required double peso,
     required DateTime fecha,
     required String tipo,
+    String? observaciones,
   }) async {
     state = state.copyWith(isLoading: true, errorMessage: null, isSuccess: false);
     final result = await _repository.registrarPesaje(
       porcinoId: porcinoId,
+      animalUuid: animalUuid,
+      corralUuid: corralUuid,
       peso: peso,
       fecha: fecha,
       tipo: tipo,
+      observaciones: observaciones,
     );
 
     return result.fold(
@@ -83,12 +89,18 @@ class WeightNotifier extends Notifier<WeightState> {
 
   Future<IaWeightEstimationResult?> estimarConIa({
     required int porcinoId,
+    String? animalUuid,
+    String? corralUuid,
     required File imageFile,
+    bool persistir = true,
   }) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     final result = await _repository.estimarPesoPorIa(
       porcinoId: porcinoId,
+      animalUuid: animalUuid,
+      corralUuid: corralUuid,
       imagenCenital: imageFile,
+      persistir: persistir,
     );
 
     return result.fold(

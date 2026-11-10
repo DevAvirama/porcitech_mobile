@@ -5,6 +5,11 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
+  // --- Colores Institucionales SENA (Homologados con PorciTech Web) ---
+  static const Color senaGreen = Color(0xFF39A900); // --color-sena-green
+  static const Color senaBlue = Color(0xFF00324D); // --color-sena-blue
+  static const Color senaYellow = Color(0xFFFFC000); // --color-sena-yellow
+
   // --- Verdes Corporativos (Esmeralda) ---
   static const Color primary = Color(0xFF059669); // Esmeralda base
   static const Color primaryDark = Color(0xFF047857);

@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:porcitech_mobile/src/core/di/core_providers.dart';
 import 'package:porcitech_mobile/src/core/theme/app_colors.dart';
+import 'package:porcitech_mobile/src/core/widgets/brand_mark.dart';
 import 'package:porcitech_mobile/src/core/widgets/tactile_button.dart';
 import 'package:porcitech_mobile/src/features/auth/presentation/controllers/auth_controller.dart';
 
 /// Pantalla de Inicio de Sesión de PorciTech (`inicio_de_sesion_porcitech`).
-/// Adaptada a la interfaz gráfica del diseño de referencia conservando la arquitectura Riverpod.
+/// Homologada con la identidad visual institucional del SENA (`BrandMark`) usada en la Web.
 class InicioDeSesionPorcitech extends ConsumerStatefulWidget {
   final VoidCallback onLoginSuccess;
 
@@ -23,8 +24,8 @@ class InicioDeSesionPorcitech extends ConsumerStatefulWidget {
 class _InicioDeSesionPorcitechState
     extends ConsumerState<InicioDeSesionPorcitech> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'operador@granja.com');
-  final _passwordController = TextEditingController(text: 'Granja2026*');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
@@ -52,8 +53,6 @@ class _InicioDeSesionPorcitechState
     final authState = ref.watch(authNotifierProvider);
     final isOffline = ref.watch(offlineModeProvider);
 
-    const primaryGreen = Color(0xFF006D35);
-    const tealBadge = Color(0xFF8DE2D5);
     const inputFill = Color(0xFFF6F7FB);
     const offlineBg = Color(0xFFEEF9F8);
 
@@ -69,100 +68,80 @@ class _InicioDeSesionPorcitechState
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // --- 1. Isotipo / Card de Logo Superior ---
+                  // --- 1. Logo Institucional SENA + PorciTech (Homologado con Web) ---
                   Center(
                     child: Container(
-                      width: 90,
-                      height: 90,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 28,
+                        vertical: 20,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 15,
-                            offset: const Offset(0, 4),
+                            color: AppColors.senaBlue.withValues(alpha: 0.06),
+                            blurRadius: 18,
+                            offset: const Offset(0, 6),
                           ),
                         ],
                       ),
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.grid_view_rounded,
-                              color: primaryGreen,
-                              size: 32,
-                            ),
-                            const SizedBox(height: 2),
-                            RichText(
-                              text: const TextSpan(
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: 'Porci',
-                                    style: TextStyle(color: Color(0xFF1E293B)),
-                                  ),
-                                  TextSpan(
-                                    text: 'Tech',
-                                    style: TextStyle(color: primaryGreen),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                      child: const BrandMark(
+                        logoHeight: 60,
+                        fontSize: 30,
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
 
-                  // --- 2. Título de Marca ---
-                  Center(
-                    child: RichText(
-                      text: const TextSpan(
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.5,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: 'Porci',
-                            style: TextStyle(color: Color(0xFF1E293B)),
-                          ),
-                          TextSpan(
-                            text: 'Tech',
-                            style: TextStyle(color: primaryGreen),
-                          ),
-                        ],
+                  // --- 2. Subtítulo Institucional ---
+                  const Center(
+                    child: Text(
+                      'Sistema Integral de Gestión Porcina',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.senaBlue,
                       ),
                     ),
                   ),
                   const SizedBox(height: 8),
 
-                  // --- 3. Insignia "GESTIÓN PORCINA EN CAMPO" ---
+                  // --- 3. Insignia de Operación Móvil ---
                   Center(
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 6,
+                        horizontal: 14,
+                        vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: tealBadge,
+                        color: AppColors.senaGreen.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'GESTIÓN PORCINA EN CAMPO',
-                        style: TextStyle(
-                          color: Color(0xFF0F5144),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
+                        border: Border.all(
+                          color: AppColors.senaGreen.withValues(alpha: 0.35),
                         ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.verified_user_outlined,
+                            size: 15,
+                            color: AppColors.senaBlue,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'TERMINAL MÓVIL DE CAMPO • SENA',
+                            style: TextStyle(
+                              color: AppColors.senaBlue,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -174,6 +153,7 @@ class _InicioDeSesionPorcitechState
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.03),
@@ -187,27 +167,23 @@ class _InicioDeSesionPorcitechState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Cabecera de la tarjeta
-                          Row(
-                            children: const [
-                              Icon(
-                                Icons.badge_outlined,
-                                color: primaryGreen,
-                                size: 22,
-                              ),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'ACCESO DE OPERADOR DE GALPÓN',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF334155),
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          const Text(
+                            'INICIAR SESIÓN',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.senaGreen,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Ingresa a tu cuenta',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.senaBlue,
+                            ),
                           ),
                           const SizedBox(height: 20),
 
@@ -252,7 +228,7 @@ class _InicioDeSesionPorcitechState
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF1E293B),
+                              color: AppColors.slateHeading,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -262,16 +238,16 @@ class _InicioDeSesionPorcitechState
                             textInputAction: TextInputAction.next,
                             style: const TextStyle(
                               fontSize: 15,
-                              color: Color(0xFF1E293B),
+                              color: AppColors.slateHeading,
                             ),
                             decoration: InputDecoration(
-                              hintText: 'operador@granja.com',
+                              hintText: 'usuario@porcitech.sena.edu.co',
                               hintStyle: const TextStyle(
                                 color: Color(0xFF94A3B8),
                                 fontSize: 14,
                               ),
                               prefixIcon: const Icon(
-                                Icons.email_outlined,
+                                Icons.mail_outline_rounded,
                                 color: Color(0xFF64748B),
                               ),
                               filled: true,
@@ -286,7 +262,7 @@ class _InicioDeSesionPorcitechState
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return 'Por favor ingrese su correo';
+                                return 'Por favor ingrese su correo electrónico';
                               }
                               return null;
                             },
@@ -299,7 +275,7 @@ class _InicioDeSesionPorcitechState
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF1E293B),
+                              color: AppColors.slateHeading,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -310,7 +286,7 @@ class _InicioDeSesionPorcitechState
                             onFieldSubmitted: (_) => _handleLogin(),
                             style: const TextStyle(
                               fontSize: 15,
-                              color: Color(0xFF1E293B),
+                              color: AppColors.slateHeading,
                             ),
                             decoration: InputDecoration(
                               hintText: '••••••••••••',
@@ -319,7 +295,7 @@ class _InicioDeSesionPorcitechState
                                 fontSize: 14,
                               ),
                               prefixIcon: const Icon(
-                                Icons.lock_outline,
+                                Icons.lock_outline_rounded,
                                 color: Color(0xFF64748B),
                               ),
                               suffixIcon: IconButton(
@@ -352,28 +328,13 @@ class _InicioDeSesionPorcitechState
                               return null;
                             },
                           ),
-                          const SizedBox(height: 12),
-
-                          // Enlace "¿Olvidó su contraseña?"
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: GestureDetector(
-                              onTap: () {},
-                              child: const Text(
-                                '¿Olvidó su contraseña?',
-                                style: TextStyle(
-                                  color: primaryGreen,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          ),
                           const SizedBox(height: 20),
 
-                          // Botón de Iniciar Sesión con TactileButton
+                          // Botón de Iniciar Sesión
                           TactileButton(
-                            text: 'Iniciar Sesión',
+                            text: authState.isLoading
+                                ? 'Iniciando sesión...'
+                                : 'Ingresar al Dashboard',
                             icon: Icons.login_rounded,
                             isLoading: authState.isLoading,
                             onPressed: _handleLogin,
@@ -394,7 +355,7 @@ class _InicioDeSesionPorcitechState
                       color: offlineBg,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: tealBadge.withValues(alpha: 0.5),
+                        color: AppColors.senaGreen.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Row(
@@ -402,12 +363,14 @@ class _InicioDeSesionPorcitechState
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: tealBadge,
+                            color: AppColors.senaGreen.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(
-                            Icons.wifi_off_rounded,
-                            color: Color(0xFF0F5144),
+                          child: Icon(
+                            isOffline
+                                ? Icons.cloud_off_rounded
+                                : Icons.cloud_done_rounded,
+                            color: AppColors.senaBlue,
                             size: 20,
                           ),
                         ),
@@ -415,18 +378,20 @@ class _InicioDeSesionPorcitechState
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
+                            children: [
                               Text(
-                                'Modo Sin Conexión Activado',
-                                style: TextStyle(
+                                isOffline
+                                    ? 'Modo Sin Conexión Activado'
+                                    : 'Modo Sin Conexión (Opcional)',
+                                style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1E293B),
+                                  color: AppColors.senaBlue,
                                 ),
                               ),
-                              SizedBox(height: 2),
-                              Text(
-                                'Sincronizar datos al recuperar señal',
+                              const SizedBox(height: 2),
+                              const Text(
+                                'Guarda registros en dispositivo y sincroniza al recuperar red',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Color(0xFF64748B),
@@ -437,7 +402,7 @@ class _InicioDeSesionPorcitechState
                         ),
                         Switch.adaptive(
                           value: isOffline,
-                          activeTrackColor: primaryGreen,
+                          activeTrackColor: AppColors.senaGreen,
                           onChanged: (val) {
                             ref
                                 .read(offlineModeProvider.notifier)
@@ -447,42 +412,18 @@ class _InicioDeSesionPorcitechState
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-
-                  // --- 6. Indicador de Terminal ---
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(
-                        Icons.agriculture_outlined,
-                        color: Color(0xFF475569),
-                        size: 20,
-                      ),
-                      SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          'Terminal de Bioseguridad y Pesaje Habilitado',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF475569),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
                   const SizedBox(height: 20),
 
-                  // --- 7. Pie de Página ---
+                  // --- 6. Pie de Página ---
                   const Center(
                     child: Text(
-                      'PORCITECH MOBILE V1.0 - SENA',
+                      'PORCITECH MOBILE • SERVICIO NACIONAL DE APRENDIZAJE (SENA)',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF94A3B8),
-                        letterSpacing: 0.8,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF64748B),
+                        letterSpacing: 0.6,
                       ),
                     ),
                   ),

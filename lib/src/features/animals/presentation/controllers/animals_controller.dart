@@ -23,6 +23,7 @@ final animalsRepositoryProvider = Provider<AnimalsRepository>((ref) {
 class AnimalsListState {
   final bool isLoading;
   final List<PorcinoEntity> porcinos;
+  final List<LoteEntity> lotes;
   final String? errorMessage;
   final String searchQuery;
   final String selectedFilter;
@@ -30,6 +31,7 @@ class AnimalsListState {
   const AnimalsListState({
     this.isLoading = false,
     this.porcinos = const [],
+    this.lotes = const [],
     this.errorMessage,
     this.searchQuery = '',
     this.selectedFilter = 'Todos',
@@ -38,6 +40,7 @@ class AnimalsListState {
   AnimalsListState copyWith({
     bool? isLoading,
     List<PorcinoEntity>? porcinos,
+    List<LoteEntity>? lotes,
     String? errorMessage,
     String? searchQuery,
     String? selectedFilter,
@@ -45,6 +48,7 @@ class AnimalsListState {
     return AnimalsListState(
       isLoading: isLoading ?? this.isLoading,
       porcinos: porcinos ?? this.porcinos,
+      lotes: lotes ?? this.lotes,
       errorMessage: errorMessage,
       searchQuery: searchQuery ?? this.searchQuery,
       selectedFilter: selectedFilter ?? this.selectedFilter,
@@ -55,7 +59,10 @@ class AnimalsListState {
 class AnimalsNotifier extends Notifier<AnimalsListState> {
   @override
   AnimalsListState build() {
-    Future.microtask(() => fetchPorcinos());
+    Future.microtask(() {
+      fetchPorcinos();
+      fetchLotes();
+    });
     return const AnimalsListState();
   }
 
@@ -79,6 +86,14 @@ class AnimalsNotifier extends Notifier<AnimalsListState> {
     );
   }
 
+  Future<void> fetchLotes() async {
+    final result = await _repository.getLotes();
+    result.fold(
+      (_) {},
+      (lotesList) => state = state.copyWith(lotes: lotesList),
+    );
+  }
+
   void setSearchQuery(String query) {
     state = state.copyWith(searchQuery: query);
     fetchPorcinos();
@@ -91,18 +106,26 @@ class AnimalsNotifier extends Notifier<AnimalsListState> {
 
   Future<bool> registerPorcino({
     required String codigo,
+    String? nombreAlias,
     required String raza,
     required String sexo,
     required DateTime fechaNacimiento,
     required int loteId,
+    String? corralUuid,
+    String estado = 'levante',
+    double pesoInicialKg = 0.0,
   }) async {
     state = state.copyWith(isLoading: true);
     final result = await _repository.createPorcino(
       codigo: codigo,
+      nombreAlias: nombreAlias,
       raza: raza,
       sexo: sexo,
       fechaNacimiento: fechaNacimiento,
       loteId: loteId,
+      corralUuid: corralUuid,
+      estado: estado,
+      pesoInicialKg: pesoInicialKg,
     );
     return result.fold(
       (failure) {
@@ -111,6 +134,35 @@ class AnimalsNotifier extends Notifier<AnimalsListState> {
       },
       (created) {
         fetchPorcinos();
+        fetchLotes();
+        return true;
+      },
+    );
+  }
+
+  Future<bool> registerLote({
+    required String codigo,
+    required String nombre,
+    required String fase,
+    required String galpon,
+    int capacidadMaxima = 25,
+  }) async {
+    state = state.copyWith(isLoading: true);
+    final result = await _repository.createLote(
+      codigo: codigo,
+      nombre: nombre,
+      fase: fase,
+      galpon: galpon,
+      capacidadMaxima: capacidadMaxima,
+    );
+    return result.fold(
+      (failure) {
+        state = state.copyWith(isLoading: false, errorMessage: failure.message);
+        return false;
+      },
+      (created) {
+        fetchLotes();
+        state = state.copyWith(isLoading: false);
         return true;
       },
     );
@@ -134,4 +186,14 @@ final porcinoDetailProvider =
     (l) => throw Exception(l.message),
     (r) => r,
   );
+});
+
+final historialPesajesProvider =
+    FutureProvider.family<List<PesoHistoricoItem>, PorcinoEntity>((ref, porcino) async {
+  final repository = ref.watch(animalsRepositoryProvider);
+  final result = await repository.getHistorialPesajes(
+    porcino.id,
+    uuid: porcino.uuid,
+  );
+  return result.getOrElse((_) => porcino.curvaCrecimiento);
 });

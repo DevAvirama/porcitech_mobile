@@ -9,8 +9,7 @@ import 'package:porcitech_mobile/src/features/weight_estimation/domain/entities/
 import 'package:porcitech_mobile/src/features/weight_estimation/presentation/controllers/weight_controller.dart';
 
 /// Pantalla: Captura Fotográfica Cenital Top-Down (`captura_cenital_screen`).
-/// Guías visuales en pantalla para operarios, compresión y preprocesamiento
-/// antes del envío al microservicio YOLO / OpenCV.
+/// Guías visuales en pantalla para operarios, compresión y envío al endpoint `/pesajes/ia`.
 class CapturaCenitalScreen extends ConsumerStatefulWidget {
   final PorcinoEntity porcino;
   final void Function(double pesoEstimado) onPesoAplicado;
@@ -35,9 +34,9 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
     try {
       final XFile? photo = await _picker.pickImage(
         source: source,
-        maxWidth: 1280, // Preprocesamiento: Reducción a resolución óptima YOLO
+        maxWidth: 1280,
         maxHeight: 1280,
-        imageQuality: 85, // Compresión de imagen para redes con latencia en campo
+        imageQuality: 85,
       );
 
       if (photo != null && mounted) {
@@ -49,6 +48,8 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
 
         final result = await ref.read(weightNotifierProvider.notifier).estimarConIa(
               porcinoId: widget.porcino.id,
+              animalUuid: widget.porcino.uuid,
+              corralUuid: widget.porcino.corralUuid,
               imageFile: _capturedImage!,
             );
 
@@ -72,28 +73,6 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
     }
   }
 
-  void _simularCapturaCenital() {
-    setState(() {
-      _isProcessing = true;
-      _iaResult = null;
-    });
-
-    Future.delayed(const Duration(milliseconds: 1400), () {
-      if (!mounted) return;
-      setState(() {
-        _isProcessing = false;
-        _iaResult = IaWeightEstimationResult(
-          porcinoId: widget.porcino.id,
-          pesoEstimado: 84.7,
-          unidad: 'kg',
-          metodo: 'ia_yolo_v8',
-          fecha: DateTime.now(),
-          confianzaIa: 0.95,
-        );
-      });
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -102,13 +81,12 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         title: Text(
-          'Captura Cenital • ${widget.porcino.codigo}',
+          'Captura Cenital IA • ${widget.porcino.codigo}',
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
       body: Stack(
         children: [
-          // Vista previa o Guía Cenital
           if (_capturedImage != null) ...[
             Positioned.fill(
               child: Image.file(_capturedImage!, fit: BoxFit.cover),
@@ -119,7 +97,7 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
                 color: const Color(0xFF0F172A),
                 child: Center(
                   child: Icon(
-                    Icons.camera_indoor_outlined,
+                    Icons.center_focus_strong_rounded,
                     size: 90,
                     color: Colors.white.withValues(alpha: 0.15),
                   ),
@@ -128,7 +106,6 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
             ),
           ],
 
-          // Guías Visuales Cenitales (Silueta de lomo porcino)
           Positioned.fill(
             child: IgnorePointer(
               child: CustomPaint(
@@ -137,7 +114,6 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
             ),
           ),
 
-          // Banner de Instrucción Operativa para el Operario
           Positioned(
             top: 20,
             left: 20,
@@ -147,15 +123,15 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primary),
+                border: Border.all(color: AppColors.senaGreen),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.info_outline, color: AppColors.primary, size: 22),
+                  Icon(Icons.info_outline, color: AppColors.senaGreen, size: 22),
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Ubíquese sobre el corral. Mantenga el móvil paralelo al lomo del animal (altura ~1.2m).',
+                      'Ubíquese sobre el corral. Mantenga la cámara paralela al dorso del animal (~1.2 m de altura).',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -168,7 +144,6 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
             ),
           ),
 
-          // Modal de Resultado de la IA si ya se procesó
           if (_iaResult != null) ...[
             Positioned(
               left: 20,
@@ -194,7 +169,10 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
                             color: AppColors.mintSoft,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.auto_awesome, color: AppColors.primaryDark),
+                          child: const Icon(
+                            Icons.center_focus_strong_rounded,
+                            color: AppColors.primaryDark,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -202,7 +180,7 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'PESO ESTIMADO (YOLO / OpenCV)',
+                                'PESO ESTIMADO POR VISIÓN IA',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
@@ -210,7 +188,7 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
                                 ),
                               ),
                               Text(
-                                '${_iaResult!.pesoEstimado} ${_iaResult!.unidad}',
+                                '${_iaResult!.pesoEstimado.toStringAsFixed(1)} ${_iaResult!.unidad}',
                                 style: const TextStyle(
                                   fontSize: 26,
                                   fontWeight: FontWeight.w900,
@@ -227,7 +205,7 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            'Confianza: ${((_iaResult!.confianzaIa ?? 0.94) * 100).toInt()}%',
+                            'Confianza: ${((_iaResult!.confianzaIa ?? 0.92) * 100).toInt()}%',
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -237,10 +215,21 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
                         ),
                       ],
                     ),
+                    if (_iaResult!.largoCm != null || _iaResult!.anchoCm != null) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        'Biometría dorsal: Largo ${_iaResult!.largoCm?.toStringAsFixed(1) ?? "-"} cm • Ancho ${_iaResult!.anchoCm?.toStringAsFixed(1) ?? "-"} cm • Área ${_iaResult!.areaCm2?.toStringAsFixed(0) ?? "-"} cm²',
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.slateMuted,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 14),
                     TactileButton(
-                      text: 'Aplicar Peso al Registro',
-                      icon: Icons.check,
+                      text: 'Aplicar Peso Estimado al Registro',
+                      icon: Icons.check_rounded,
                       onPressed: () {
                         widget.onPesoAplicado(_iaResult!.pesoEstimado);
                         Navigator.pop(context);
@@ -252,7 +241,6 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
             ),
           ],
 
-          // Indicador de Procesamiento
           if (_isProcessing) ...[
             Container(
               color: Colors.black.withValues(alpha: 0.6),
@@ -260,10 +248,10 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(color: AppColors.primary),
+                    CircularProgressIndicator(color: AppColors.senaGreen),
                     SizedBox(height: 16),
                     Text(
-                      'Segmentando lomo porcino con IA...',
+                      'Analizando contorno dorsal con Visión IA...',
                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
                     ),
                   ],
@@ -272,7 +260,6 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
             ),
           ],
 
-          // Barra Inferior de Disparo
           Positioned(
             left: 0,
             right: 0,
@@ -284,8 +271,12 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.photo_library_outlined, color: Colors.white, size: 28),
-                    tooltip: 'Galería',
+                    icon: const Icon(
+                      Icons.photo_library_outlined,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                    tooltip: 'Subir desde Galería',
                     onPressed: () => _captureOrPickPhoto(ImageSource.gallery),
                   ),
                   GestureDetector(
@@ -296,15 +287,24 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 4),
-                        color: AppColors.primary,
+                        color: AppColors.senaGreen,
                       ),
                       child: const Icon(Icons.camera_alt, color: Colors.white, size: 36),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.model_training, color: Colors.white, size: 28),
-                    tooltip: 'Simular IA YOLO',
-                    onPressed: _simularCapturaCenital,
+                    icon: const Icon(
+                      Icons.refresh_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                    tooltip: 'Limpiar Captura',
+                    onPressed: () {
+                      setState(() {
+                        _capturedImage = null;
+                        _iaResult = null;
+                      });
+                    },
                   ),
                 ],
               ),
@@ -320,7 +320,7 @@ class _CenitalGuidePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.primaryLight.withValues(alpha: 0.8)
+      ..color = AppColors.senaGreen.withValues(alpha: 0.85)
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke;
 

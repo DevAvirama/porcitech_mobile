@@ -24,7 +24,6 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
   }) async {
-    // Si el modo offline está forzado, validamos credenciales cacheadas
     if (cacheService.isOfflineModeEnabled()) {
       final cachedUser = await secureStorage.getUserData();
       if (cachedUser['email'] != null && cachedUser['email']!.isNotEmpty) {
@@ -35,7 +34,7 @@ class AuthRepositoryImpl implements AuthRepository {
             name: cachedUser['name'] ?? 'Operario de Campo',
             role: cachedUser['role'] ?? 'operario',
             token: 'offline_token_${DateTime.now().millisecondsSinceEpoch}',
-            granja: 'Granja San Jerónimo (Modo Offline)',
+            granja: 'Unidad Porcina SENA (Modo Offline)',
           ),
         );
       }
@@ -47,7 +46,6 @@ class AuthRepositoryImpl implements AuthRepository {
         password: password,
       );
 
-      // Persistir JWT y datos en almacenamiento seguro
       await secureStorage.saveTokens(accessToken: userModel.token);
       await secureStorage.saveUserData(
         email: userModel.email,
@@ -61,7 +59,6 @@ class AuthRepositoryImpl implements AuthRepository {
     } on UnauthorizedException catch (e) {
       return Left(AuthFailure(e.message, e.statusCode));
     } on NoInternetException catch (e) {
-      // Intento de fallback offline con credenciales previas
       final cachedUser = await secureStorage.getUserData();
       if (cachedUser['email'] != null && cachedUser['email']!.isNotEmpty) {
         return Right(
@@ -71,7 +68,7 @@ class AuthRepositoryImpl implements AuthRepository {
             name: cachedUser['name'] ?? 'Operario de Campo',
             role: cachedUser['role'] ?? 'operario',
             token: 'offline_cached_token',
-            granja: 'Granja San Jerónimo (Offline)',
+            granja: 'Unidad Porcina SENA (Offline)',
           ),
         );
       }
@@ -100,10 +97,10 @@ class AuthRepositoryImpl implements AuthRepository {
         UserModel(
           id: 1,
           email: userData['email']!,
-          name: userData['name'] ?? 'Operario Granja',
+          name: userData['name'] ?? 'Operario Unidad Porcina',
           role: userData['role'] ?? 'operario',
           token: token,
-          granja: 'Granja San Jerónimo - Galpón 4',
+          granja: 'Unidad Porcina Tecnificada • SENA',
         ),
       );
     } catch (e) {

@@ -28,14 +28,24 @@ class IaWeightEstimationResult extends Equatable {
   final String metodo;
   final DateTime fecha;
   final double? confianzaIa;
+  final double? areaCm2;
+  final double? largoCm;
+  final double? anchoCm;
+  final String? imagenAnotadaBase64;
+  final bool persistido;
 
   const IaWeightEstimationResult({
     required this.porcinoId,
     required this.pesoEstimado,
     this.unidad = 'kg',
-    this.metodo = 'ia',
+    this.metodo = 'ia_vision',
     required this.fecha,
     this.confianzaIa,
+    this.areaCm2,
+    this.largoCm,
+    this.anchoCm,
+    this.imagenAnotadaBase64,
+    this.persistido = false,
   });
 
   @override
@@ -46,5 +56,10 @@ class IaWeightEstimationResult extends Equatable {
         metodo,
         fecha,
         confianzaIa,
+        areaCm2,
+        largoCm,
+        anchoCm,
+        imagenAnotadaBase64,
+        persistido,
       ];
 }

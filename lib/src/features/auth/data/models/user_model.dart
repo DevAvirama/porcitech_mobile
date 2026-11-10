@@ -24,7 +24,8 @@ class UserModel extends UserEntity {
       } else {
         final hexClean = idStr.replaceAll('-', '');
         if (hexClean.length >= 8) {
-          parsedId = int.tryParse(hexClean.substring(0, 8), radix: 16) ?? idStr.hashCode.abs();
+          parsedId =
+              int.tryParse(hexClean.substring(0, 8), radix: 16) ?? idStr.hashCode.abs();
         } else if (idStr.isNotEmpty) {
           parsedId = idStr.hashCode.abs();
         }
@@ -37,12 +38,14 @@ class UserModel extends UserEntity {
 
     return UserModel(
       id: parsedId,
-      email: json['email'] as String? ?? 'operario@porcitech.agro',
+      email: json['email'] as String? ?? 'operario@porcitech.sena.edu.co',
       name: fullName.isNotEmpty
           ? fullName
-          : (json['name'] as String? ?? json['username'] as String? ?? 'Operario Granja'),
+          : (json['name'] as String? ??
+              json['username'] as String? ??
+              'Operario Unidad Porcina'),
       role: json['rol'] as String? ?? json['role'] as String? ?? 'operario',
-      granja: json['granja'] as String? ?? 'Granja San Jerónimo - Galpón 4',
+      granja: json['granja'] as String? ?? 'Unidad Porcina Tecnificada • SENA',
       token: token,
     );
   }
@@ -53,6 +56,7 @@ class UserModel extends UserEntity {
       'email': email,
       'name': name,
       'role': role,
+      'rol': role,
       'granja': granja,
       'token': token,
     };

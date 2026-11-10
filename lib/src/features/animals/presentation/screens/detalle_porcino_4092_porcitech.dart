@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:porcitech_mobile/src/core/constants/zootechnical_constants.dart';
 import 'package:porcitech_mobile/src/core/theme/app_colors.dart';
+import 'package:porcitech_mobile/src/core/widgets/brand_mark.dart';
 import 'package:porcitech_mobile/src/core/widgets/status_badge.dart';
 import 'package:porcitech_mobile/src/core/widgets/tactile_button.dart';
 import 'package:porcitech_mobile/src/core/widgets/withdrawal_alert_banner.dart';
 import 'package:porcitech_mobile/src/features/animals/domain/entities/porcino_entity.dart';
+import 'package:porcitech_mobile/src/features/animals/presentation/controllers/animals_controller.dart';
 
 /// Pantalla: Detalle Individual del Porcino (`detalle_porcino_4092_porcitech`).
-/// Expediente clínico y zootécnico con 4 métricas maestras y curva de crecimiento con fl_chart.
-class DetallePorcino4092Porcitech extends StatelessWidget {
+/// Expediente clínico y zootécnico con 4 métricas maestras y curva de crecimiento real con fl_chart.
+class DetallePorcino4092Porcitech extends ConsumerWidget {
   final PorcinoEntity porcino;
   final VoidCallback onRegistrarPesaje;
   final VoidCallback onRegistrarSanidad;
@@ -25,7 +28,9 @@ class DetallePorcino4092Porcitech extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final historialAsync = ref.watch(historialPesajesProvider(porcino));
+    final curvaItems = historialAsync.asData?.value ?? porcino.curvaCrecimiento;
     final gdpClasificacion = ZootechnicalConstants.clasificarDesempenoGdp(
       porcino.gdpActualGramoDia,
       porcino.fase,
@@ -34,9 +39,18 @@ class DetallePorcino4092Porcitech extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(
-          'Expediente ${porcino.codigo}',
-          style: const TextStyle(fontWeight: FontWeight.w800),
+        title: Row(
+          children: [
+            const BrandMark(compact: true),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Expediente ${porcino.codigo}',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
       ),
       body: SingleChildScrollView(
@@ -226,7 +240,7 @@ class DetallePorcino4092Porcitech extends StatelessWidget {
                   const SizedBox(height: 16),
                   SizedBox(
                     height: 200,
-                    child: _buildGrowthChart(porcino.curvaCrecimiento),
+                    child: _buildGrowthChart(curvaItems),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -267,8 +281,8 @@ class DetallePorcino4092Porcitech extends StatelessWidget {
             if (porcino.esHembraReproductora && onRegistrarParto != null) ...[
               const SizedBox(height: 12),
               TactileButton(
-                text: 'Registrar Parto de la Cerda',
-                icon: Icons.child_care_rounded,
+                text: 'Ciclo Reproductivo / Partos',
+                icon: Icons.monitor_heart_rounded,
                 type: TactileButtonType.outline,
                 onPressed: onRegistrarParto,
               ),

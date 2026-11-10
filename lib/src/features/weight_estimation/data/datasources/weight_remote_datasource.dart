@@ -9,14 +9,20 @@ import '../../domain/entities/weight_record_entity.dart';
 abstract class WeightRemoteDataSource {
   Future<WeightRecordEntity> registrarPesaje({
     required int porcinoId,
+    String? animalUuid,
+    String? corralUuid,
     required double peso,
     required DateTime fecha,
     required String tipo,
+    String? observaciones,
   });
 
   Future<IaWeightEstimationResult> estimarPesoPorIa({
     required int porcinoId,
+    String? animalUuid,
+    String? corralUuid,
     required File imagenCenital,
+    bool persistir = true,
   });
 }
 
@@ -28,21 +34,24 @@ class WeightRemoteDataSourceImpl implements WeightRemoteDataSource {
   @override
   Future<WeightRecordEntity> registrarPesaje({
     required int porcinoId,
+    String? animalUuid,
+    String? corralUuid,
     required double peso,
     required DateTime fecha,
     required String tipo,
+    String? observaciones,
   }) async {
     try {
-      final resolvedAnimalUuid = PorcinoModel.resolveUuid(porcinoId);
-      final resolvedCorralUuid = PorcinoModel.resolveCorralUuid(porcinoId);
-      final payload = {
+      final resolvedAnimalUuid = animalUuid ?? PorcinoModel.resolveUuid(porcinoId);
+      final resolvedCorralUuid = corralUuid ?? PorcinoModel.resolveCorralUuid(porcinoId);
+      final payload = <String, dynamic>{
         'id_cerdo': ?resolvedAnimalUuid,
         'corral_id': ?resolvedCorralUuid,
         'peso_kg': peso,
-        'porcino': porcinoId,
-        'peso': peso,
-        'fecha': fecha.toIso8601String().split('T').first,
-        'tipo': tipo,
+        'metodo': tipo.toLowerCase().contains('ia') ? 'ia_vision' : 'manual',
+        'tiempo': fecha.toIso8601String(),
+        if (observaciones != null && observaciones.trim().isNotEmpty)
+          'observaciones': observaciones.trim(),
       };
 
       final response = await _client.post(
@@ -83,16 +92,19 @@ class WeightRemoteDataSourceImpl implements WeightRemoteDataSource {
   @override
   Future<IaWeightEstimationResult> estimarPesoPorIa({
     required int porcinoId,
+    String? animalUuid,
+    String? corralUuid,
     required File imagenCenital,
+    bool persistir = true,
   }) async {
     try {
       final fileName = imagenCenital.path.split('/').last;
-      final resolvedAnimalUuid = PorcinoModel.resolveUuid(porcinoId);
-      final resolvedCorralUuid = PorcinoModel.resolveCorralUuid(porcinoId);
+      final resolvedAnimalUuid = animalUuid ?? PorcinoModel.resolveUuid(porcinoId);
+      final resolvedCorralUuid = corralUuid ?? PorcinoModel.resolveCorralUuid(porcinoId);
       final formData = FormData.fromMap({
         'id_cerdo': ?resolvedAnimalUuid,
         'corral_id': ?resolvedCorralUuid,
-        'porcino': porcinoId.toString(),
+        'persistir': persistir.toString(),
         'file': await MultipartFile.fromFile(
           imagenCenital.path,
           filename: fileName,
@@ -113,17 +125,22 @@ class WeightRemoteDataSourceImpl implements WeightRemoteDataSource {
           );
         }
         return IaWeightEstimationResult(
-          porcinoId: data['porcino'] is int ? data['porcino'] as int : porcinoId,
+          porcinoId: porcinoId,
           pesoEstimado: (data['peso_estimado_kg'] as num?)?.toDouble() ??
               (data['peso_estimado'] as num?)?.toDouble() ??
-              84.7,
+              0.0,
           unidad: data['unidad'] as String? ?? 'kg',
-          metodo: data['metodo'] as String? ?? (data['fuente'] as String? ?? 'ia'),
+          metodo: data['metodo'] as String? ?? (data['fuente'] as String? ?? 'ia_vision'),
           fecha: DateTime.tryParse(data['tiempo_registro']?.toString() ??
                   data['fecha']?.toString() ??
                   '') ??
               DateTime.now(),
           confianzaIa: (data['confianza'] as num?)?.toDouble() ?? 0.94,
+          areaCm2: (data['area_cm2'] as num?)?.toDouble(),
+          largoCm: (data['largo_cm'] as num?)?.toDouble(),
+          anchoCm: (data['ancho_cm'] as num?)?.toDouble(),
+          imagenAnotadaBase64: data['imagen_anotada_base64'] as String?,
+          persistido: data['persistido'] as bool? ?? false,
         );
       }
       throw const ServerException('Respuesta inválida del microservicio YOLO/OpenCV.');

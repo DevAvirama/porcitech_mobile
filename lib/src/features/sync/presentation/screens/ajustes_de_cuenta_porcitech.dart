@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:porcitech_mobile/src/core/constants/api_constants.dart';
 import 'package:porcitech_mobile/src/core/di/core_providers.dart';
 import 'package:porcitech_mobile/src/core/theme/app_colors.dart';
+import 'package:porcitech_mobile/src/core/widgets/brand_mark.dart';
 import 'package:porcitech_mobile/src/core/widgets/tactile_button.dart';
 import 'package:porcitech_mobile/src/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:porcitech_mobile/src/features/sync/presentation/controllers/sync_controller.dart';
@@ -37,9 +39,18 @@ class _AjustesDeCuentaPorcitechState
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          'Ajustes y Sincronización',
-          style: TextStyle(fontWeight: FontWeight.w800),
+        title: const Row(
+          children: [
+            BrandMark(compact: true),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Ajustes y Sincronización',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
       ),
       body: SingleChildScrollView(
@@ -160,7 +171,7 @@ class _AjustesDeCuentaPorcitechState
                         Text(
                           isOffline
                               ? 'Las transacciones se guardan en la cola local'
-                              : 'Latencia nominal: ~45ms • BaseUrl: api.porcitech.agro.co',
+                              : 'Endpoint activo: ${ApiConstants.defaultBaseUrl}',
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.slateMuted,
@@ -350,7 +361,7 @@ class _AjustesDeCuentaPorcitechState
 
             // Botón Sincronizar Cola
             TactileButton(
-              text: 'Sincronizar Cola Ahora (/api/sync/offline-queue/)',
+              text: 'Sincronizar Registros Pendientes',
               icon: Icons.sync_rounded,
               isLoading: syncState.isSyncing,
               onPressed: syncState.queueItems.isEmpty

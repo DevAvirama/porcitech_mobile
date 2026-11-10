@@ -83,7 +83,7 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
   }
 
   void _showManualEntryDialog() {
-    final controller = TextEditingController(text: 'POR-4092');
+    final controller = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -92,8 +92,8 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
           controller: controller,
           autofocus: true,
           decoration: const InputDecoration(
-            hintText: 'ej. POR-4092 o CERDA-H-104',
-            prefixIcon: Icon(Icons.tag),
+            hintText: 'Ej. POR-4092 o CERDA-H-104',
+            prefixIcon: Icon(Icons.qr_code_2_rounded),
           ),
         ),
         actions: [
@@ -103,8 +103,10 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
           ),
           ElevatedButton(
             onPressed: () {
+              final text = controller.text.trim();
+              if (text.isEmpty) return;
               Navigator.pop(ctx);
-              _handleBarcodeDetected(controller.text.trim());
+              _handleBarcodeDetected(text);
             },
             child: const Text('Buscar'),
           ),
@@ -148,7 +150,7 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
                     color: AppColors.mintSoft,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.check_circle_outline, color: AppColors.primaryDark, size: 30),
+                  child: const Icon(Icons.qr_code_2_rounded, color: AppColors.primaryDark, size: 30),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -361,10 +363,10 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
                 ),
                 const SizedBox(height: 12),
                 TactileButton(
-                  text: 'Simular Detección Arete POR-4092',
-                  icon: Icons.qr_code,
+                  text: 'Ingresar Código de Arete Manualmente',
+                  icon: Icons.keyboard_alt_outlined,
                   type: TactileButtonType.secondary,
-                  onPressed: () => _handleBarcodeDetected('POR-4092'),
+                  onPressed: _showManualEntryDialog,
                 ),
               ],
             ),
