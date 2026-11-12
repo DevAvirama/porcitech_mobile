@@ -2,12 +2,19 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- =================================================================== -->
+	<!-- 1. RENDIMIENTO GRÁFICO (120Hz ProMotion para fl_chart y Cámara)     -->
+	<!-- =================================================================== -->
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+
+	<!-- =================================================================== -->
+	<!-- 2. IDENTIDAD DEL PAQUETE Y METADATOS DE DISTRIBUCIÓN                -->
+	<!-- =================================================================== -->
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Porcitech Mobile</string>
+	<string>PorciTech</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -26,6 +33,29 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+
+	<!-- =================================================================== -->
+	<!-- 3. PERMISOS DE HARDWARE EN GRANJA (QR, Visión Artificial y Galería) -->
+	<!-- =================================================================== -->
+	<key>NSCameraUsageDescription</key>
+	<string>PorciTech requiere acceso a la cámara para escanear códigos QR de aretes en corral y capturar fotografías cenitales para la estimación biométrica de peso mediante IA.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>PorciTech requiere acceso a la fototeca para cargar imágenes de referencia morfométrica y respaldar evidencias clínicas del kárdex sanitario.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>PorciTech necesita permiso para guardar capturas biométricas y reportes sanitarios en el dispositivo cuando se opera en modo offline.</string>
+
+	<!-- =================================================================== -->
+	<!-- 4. POLÍTICA DE RED (Soporte para Servidor FastAPI en LAN / Local)   -->
+	<!-- =================================================================== -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+
+	<!-- =================================================================== -->
+	<!-- 5. CONFIGURACIÓN DE ESCENA Y ENTRADA TÁCTIL                         -->
+	<!-- =================================================================== -->
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -53,18 +83,18 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+
+	<!-- =================================================================== -->
+	<!-- 6. BLOQUEO DE ORIENTACIÓN VERTICAL (Estabilidad en Toma Cenital)    -->
+	<!-- =================================================================== -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 </dict>
 </plist>

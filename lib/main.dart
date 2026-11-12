@@ -1,121 +1,273 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
-  runApp(const MyApp());
+import 'src/core/di/core_providers.dart';
+import 'src/core/theme/app_theme.dart';
+import 'src/core/widgets/porcino_picker_sheet.dart';
+import 'src/features/animals/domain/entities/porcino_entity.dart';
+import 'src/features/animals/presentation/controllers/animals_controller.dart';
+import 'src/features/animals/presentation/screens/detalle_porcino_4092_porcitech.dart';
+import 'src/features/animals/presentation/screens/escaneo_qr_detalle_rapido.dart';
+import 'src/features/animals/presentation/screens/listado_de_lotes_y_porcinos_porcitech.dart';
+import 'src/features/auth/presentation/controllers/auth_controller.dart';
+import 'src/features/auth/presentation/screens/inicio_de_sesion_porcitech.dart';
+import 'src/features/dashboard/presentation/screens/dashboard_de_campo_porcitech.dart';
+import 'src/features/feeding/presentation/screens/alimentacion_e_inventario_porcitech.dart';
+import 'src/features/health_record/presentation/screens/registro_de_vacunacion_porcitech.dart';
+import 'src/features/reproduction/presentation/screens/registro_de_parto_cerda_h_104.dart';
+import 'src/features/sync/presentation/screens/ajustes_de_cuenta_porcitech.dart';
+import 'src/features/weight_estimation/presentation/screens/captura_cenital_screen.dart';
+import 'src/features/weight_estimation/presentation/screens/registrar_pesaje_porcitech.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Bloqueo de orientación vertical preferida para operarios en galpón
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
+  // Inicialización de persistencia local previa a la inyección
+  final sharedPreferences = await SharedPreferences.getInstance();
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+      ],
+      child: const PorciTechApp(),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+/// Aplicación principal de PorciTech (Sistema Integral de Gestión Porcina SENA).
+class PorciTechApp extends ConsumerWidget {
+  const PorciTechApp({super.key});
 
-  // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      title: 'SENA • PorciTech Mobile',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      home: const RootNavigationCoordinator(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+/// Coordinador de navegación base reactivo al estado de autenticación.
+class RootNavigationCoordinator extends ConsumerWidget {
+  const RootNavigationCoordinator({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authNotifierProvider);
+
+    if (authState.isAuthenticated) {
+      return const MainDashboardFlow();
+    }
+
+    return InicioDeSesionPorcitech(
+      onLoginSuccess: () {
+        // Redirige reactivamente mediante el cambio de estado de Riverpod
+      },
+    );
+  }
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+/// Contenedor de flujo principal para las pantallas del ecosistema de campo.
+class MainDashboardFlow extends ConsumerStatefulWidget {
+  const MainDashboardFlow({super.key});
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  @override
+  ConsumerState<MainDashboardFlow> createState() => _MainDashboardFlowState();
+}
+
+class _MainDashboardFlowState extends ConsumerState<MainDashboardFlow> {
+  PorcinoEntity? _activePorcino;
+
+  PorcinoEntity _fallbackPorcino({bool female = false}) {
+    final all = ref.read(animalsNotifierProvider).porcinos;
+    if (female) {
+      final sow = all.where((p) => p.sexo.toLowerCase() == 'hembra').firstOrNull;
+      if (sow != null) return sow;
+    }
+    if (_activePorcino != null) return _activePorcino!;
+    if (all.isNotEmpty) return all.first;
+    return PorcinoEntity(
+      id: 4092,
+      codigo: female ? 'CERDA-H-104' : 'POR-4092',
+      raza: female ? 'Landrace' : 'Landrace x Pietrain',
+      sexo: female ? 'Hembra' : 'Macho',
+      fechaNacimiento: DateTime.now().subtract(const Duration(days: 145)),
+      loteId: 1,
+      loteNombre: female ? 'Corral Gestación' : 'Corral Ceba',
+      pesoActual: female ? 210.0 : 82.5,
+      estadoSanitario: 'Sano',
+      fase: female ? 'Gestación' : 'Ceba',
+      gdpActualGramoDia: 820.0,
+      diasEnFase: 65,
+    );
+  }
+
+  void _navigateTo(Widget screen) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => screen),
+    );
+  }
+
+  Future<void> _selectAndOpenPesaje() async {
+    final picked = await PorcinoPickerSheet.show(
+      context,
+      title: 'Seleccionar Porcino para Pesaje',
+      subtitle: 'Elija un ejemplar del hato o escanee su arete QR',
+      onScanQr: _openScanner,
+    );
+    if (picked != null && mounted) {
+      setState(() => _activePorcino = picked);
+      _openPesajeScreen(picked);
+    }
+  }
+
+  Future<void> _selectAndOpenSanidad() async {
+    final picked = await PorcinoPickerSheet.show(
+      context,
+      title: 'Seleccionar Porcino para Sanidad',
+      subtitle: 'Elija el animal para aplicar vacuna o consultar kárdex',
+      onScanQr: _openScanner,
+    );
+    if (picked != null && mounted) {
+      setState(() => _activePorcino = picked);
+      _openSanidadScreen(picked);
+    }
+  }
+
+  Future<void> _selectAndOpenReproduccion() async {
+    final picked = await PorcinoPickerSheet.show(
+      context,
+      title: 'Seleccionar Hembra Reproductora',
+      subtitle: 'Elija la cerda para registrar parto, servicio o destete',
+      soloHembrasReproductoras: true,
+      onScanQr: _openScanner,
+    );
+    if (picked != null && mounted) {
+      setState(() => _activePorcino = picked);
+      _openPartoScreen(picked);
+    }
+  }
+
+  void _openScanner() {
+    _navigateTo(
+      EscaneoQrDetalleRapido(
+        onOpenDetalleCompleto: (porcino) {
+          setState(() => _activePorcino = porcino);
+          _navigateTo(
+            DetallePorcino4092Porcitech(
+              porcino: porcino,
+              onRegistrarPesaje: () => _openPesajeScreen(porcino),
+              onRegistrarSanidad: () => _openSanidadScreen(porcino),
+              onRegistrarParto: porcino.esHembraReproductora
+                  ? () => _openPartoScreen(porcino)
+                  : null,
+            ),
+          );
+        },
+        onOpenPesaje: _openPesajeScreen,
+        onOpenSanidad: _openSanidadScreen,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+    return DashboardDeCampoPorcitech(
+      onScanQr: _openScanner,
+      onOpenPesaje: _selectAndOpenPesaje,
+      onOpenSanidad: _selectAndOpenSanidad,
+      onOpenPartos: _selectAndOpenReproduccion,
+      onOpenAlimentacion: () {
+        _navigateTo(const AlimentacionEInventarioPorcitech());
+      },
+      onOpenLotes: () {
+        _navigateTo(
+          ListadoDeLotesYPorcinosPorcitech(
+            onSelectPorcino: (p) {
+              setState(() => _activePorcino = p);
+              _navigateTo(
+                DetallePorcino4092Porcitech(
+                  porcino: p,
+                  onRegistrarPesaje: () => _openPesajeScreen(p),
+                  onRegistrarSanidad: () => _openSanidadScreen(p),
+                  onRegistrarParto:
+                      p.esHembraReproductora ? () => _openPartoScreen(p) : null,
+                ),
+              );
+            },
+          ),
+        );
+      },
+      onOpenAjustes: () {
+        _navigateTo(
+          AjustesDeCuentaPorcitech(
+            onLogout: () {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  void _openPesajeScreen(PorcinoEntity? porcino, {double? initialWeight}) {
+    final target = porcino ?? _fallbackPorcino();
+    _navigateTo(
+      RegistrarPesajePorcitech(
+        porcino: target,
+        initialWeight: initialWeight,
+        onOpenCapturaIa: () {
+          _navigateTo(
+            CapturaCenitalScreen(
+              porcino: target,
+              onPesoAplicado: (pesoEstimado) {
+                ref.read(animalsNotifierProvider.notifier).fetchPorcinos();
+                Navigator.of(context).pop();
+                _openPesajeScreen(target, initialWeight: pesoEstimado);
+              },
             ),
-          ],
-        ),
+          );
+        },
+        onPesajeGuardado: () {
+          ref.read(animalsNotifierProvider.notifier).fetchPorcinos();
+          Navigator.of(context).pop();
+        },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+    );
+  }
+
+  void _openSanidadScreen(PorcinoEntity? porcino) {
+    final target = porcino ?? _fallbackPorcino();
+    _navigateTo(
+      RegistroDeVacunacionPorcitech(
+        porcino: target,
+        onEventoGuardado: () {
+          ref.read(animalsNotifierProvider.notifier).fetchPorcinos();
+          Navigator.of(context).pop();
+        },
+      ),
+    );
+  }
+
+  void _openPartoScreen(PorcinoEntity? sow) {
+    final target = sow ?? _fallbackPorcino(female: true);
+    _navigateTo(
+      RegistroDePartoCerdaH104(
+        cerda: target,
+        onPartoGuardado: () {
+          Navigator.of(context).pop();
+        },
       ),
     );
   }
