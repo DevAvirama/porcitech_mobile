@@ -3,10 +3,10 @@
 class ApiConstants {
   ApiConstants._();
 
-  /// URL Base configurable mediante `--dart-define=API_BASE_URL=...` o por defecto la IP local/VM.
+  /// URL Base configurable mediante `--dart-define=API_BASE_URL=...` o por defecto la IP del host para emulador Android (10.0.2.2).
   static const String defaultBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.32.134:8000/api/v1',
+    defaultValue: 'http://10.0.2.2:8000/api/v1',
   );
   static const String localDevBaseUrl = 'http://10.0.2.2:8000/api/v1'; // Emulador Android
   static const String localHostBaseUrl = 'http://127.0.0.1:8000/api/v1'; // Host directo
