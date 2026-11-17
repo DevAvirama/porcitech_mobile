@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:porcitech_mobile/src/core/network/dio_client.dart';
@@ -32,14 +33,32 @@ final connectivityStreamProvider = StreamProvider<bool>((ref) {
   return networkInfo.onConnectivityChanged;
 });
 
+/// Bus interno para notificar expiración de sesión (HTTP 401) desde Dio hacia AuthNotifier.
+final _sessionExpiredControllerProvider =
+    Provider<StreamController<void>>((ref) {
+  final controller = StreamController<void>.broadcast();
+  ref.onDispose(controller.close);
+  return controller;
+});
+
+final sessionExpiredStreamProvider = Provider<Stream<void>>((ref) {
+  return ref.watch(_sessionExpiredControllerProvider).stream;
+});
+
 /// Provider para el cliente HTTP Dio configurado con interceptores y autorización Bearer.
 final dioClientProvider = Provider<DioClient>((ref) {
   final secureStorage = ref.watch(secureStorageProvider);
   final networkInfo = ref.watch(networkInfoProvider);
+  final sessionController = ref.watch(_sessionExpiredControllerProvider);
 
   return DioClient(
     secureStorage: secureStorage,
     networkInfo: networkInfo,
+    onSessionExpired: () {
+      if (!sessionController.isClosed) {
+        sessionController.add(null);
+      }
+    },
   );
 });
 

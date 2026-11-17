@@ -6,7 +6,7 @@ import '../../../../core/network/dio_client.dart';
 
 abstract class SyncRemoteDataSource {
   Future<Map<String, dynamic>> getUserProfile();
-  Future<void> sendSingleItem(Map<String, dynamic> item);
+  Future<dynamic> sendSingleItem(Map<String, dynamic> item);
   Future<int> sendOfflineQueue(List<Map<String, dynamic>> queueItems);
   Future<Map<String, dynamic>> downloadOfflineCatalog();
 }
@@ -69,11 +69,14 @@ class SyncRemoteDataSourceImpl implements SyncRemoteDataSource {
   }
 
   @override
-  Future<void> sendSingleItem(Map<String, dynamic> item) async {
+  Future<dynamic> sendSingleItem(Map<String, dynamic> item) async {
     final endpoint = _normalizeEndpoint(item['endpoint']?.toString() ?? '');
-    final payload = item['payload'] is Map<String, dynamic>
+    final method = (item['method']?.toString() ?? 'POST').toUpperCase();
+    final rawPayload = item['payload'] is Map<String, dynamic>
         ? Map<String, dynamic>.from(item['payload'] as Map<String, dynamic>)
         : <String, dynamic>{};
+    // Eliminar metadatos locales internos (_local_*) antes de enviar a FastAPI
+    rawPayload.removeWhere((key, _) => key.startsWith('_local_'));
 
     final filePath = item['filePath']?.toString();
     if (filePath != null && filePath.isNotEmpty) {
@@ -85,17 +88,27 @@ class SyncRemoteDataSourceImpl implements SyncRemoteDataSource {
       }
       final fileName = file.path.split('/').last;
       final formMap = <String, dynamic>{
-        ...payload,
+        ...rawPayload,
         'file': await MultipartFile.fromFile(file.path, filename: fileName),
       };
-      await _client.postMultipart(
+      final response = await _client.postMultipart(
         endpoint,
         formData: FormData.fromMap(formMap),
       );
-      return;
+      return response.data;
     }
 
-    await _client.post(endpoint, data: payload);
+    switch (method) {
+      case 'PUT':
+        final response = await _client.put(endpoint, data: rawPayload);
+        return response.data;
+      case 'DELETE':
+        final response = await _client.delete(endpoint);
+        return response.data;
+      default:
+        final response = await _client.post(endpoint, data: rawPayload);
+        return response.data;
+    }
   }
 
   @override

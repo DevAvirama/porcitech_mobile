@@ -85,7 +85,10 @@ class ReproductionRepositoryImpl implements ReproductionRepository {
         observaciones: observaciones,
       );
       return Right(remote);
-    } on AppException {
+    } on AppException catch (e) {
+      if (e.statusCode != null && e.statusCode! >= 400 && e.statusCode! < 500) {
+        return Left(ServerFailure(e.message, e.statusCode));
+      }
       await cacheService.enqueueSyncItem(
         endpoint: ApiConstants.eventosReproductivos,
         method: 'POST',
@@ -111,8 +114,10 @@ class ReproductionRepositoryImpl implements ReproductionRepository {
         observaciones: observaciones,
       );
       return Right(ok);
-    } catch (_) {
-      return const Right(false);
+    } on AppException catch (e) {
+      return Left(ServerFailure(e.message, e.statusCode));
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
     }
   }
 
@@ -196,7 +201,10 @@ class ReproductionRepositoryImpl implements ReproductionRepository {
         observaciones: observaciones,
       );
       return Right(remote);
-    } on AppException {
+    } on AppException catch (e) {
+      if (e.statusCode != null && e.statusCode! >= 400 && e.statusCode! < 500) {
+        return Left(ServerFailure(e.message, e.statusCode));
+      }
       await cacheService.enqueueSyncItem(
         endpoint: ApiConstants.partos,
         method: 'POST',
@@ -280,7 +288,10 @@ class ReproductionRepositoryImpl implements ReproductionRepository {
         observaciones: observaciones,
       );
       return Right(remote);
-    } on AppException {
+    } on AppException catch (e) {
+      if (e.statusCode != null && e.statusCode! >= 400 && e.statusCode! < 500) {
+        return Left(ServerFailure(e.message, e.statusCode));
+      }
       await cacheService.enqueueSyncItem(
         endpoint: ApiConstants.destetes,
         method: 'POST',

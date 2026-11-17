@@ -53,6 +53,16 @@ class AuthState {
 class AuthNotifier extends Notifier<AuthState> {
   @override
   AuthState build() {
+    final sub = ref.read(sessionExpiredStreamProvider).listen((_) {
+      if (state.isAuthenticated) {
+        state = const AuthState(
+          isAuthenticated: false,
+          errorMessage: 'Sesión expirada. Ingrese nuevamente.',
+        );
+      }
+    });
+    ref.onDispose(sub.cancel);
+
     // Verificación asíncrona de sesión previa
     Future.microtask(() => checkCurrentSession());
     return const AuthState();

@@ -40,12 +40,93 @@ class SyncRepositoryImpl implements SyncRepository {
     }).toList();
   }
 
-  Future<bool> _dispatchSingleRawItem(Map<String, dynamic> item) async {
+  Map<String, dynamic> _resolvePendingRefs(
+    Map<String, dynamic> item,
+    Map<int, String> corralUuidMap,
+    Map<int, String> animalUuidMap,
+  ) {
+    final payload = item['payload'] is Map<String, dynamic>
+        ? Map<String, dynamic>.from(item['payload'] as Map<String, dynamic>)
+        : <String, dynamic>{};
+    bool changed = false;
+
+    final localCorralId = (payload['_local_corral_id'] as num?)?.toInt();
+    if (localCorralId != null && corralUuidMap.containsKey(localCorralId)) {
+      final uuid = corralUuidMap[localCorralId]!;
+      payload.putIfAbsent('corral_id', () => uuid);
+      if (item['endpoint'] == '/reproduccion/partos' && !payload.containsKey('corral_maternidad_id')) {
+        payload['corral_maternidad_id'] = uuid;
+      }
+      if (item['endpoint'] == '/reproduccion/destetes' && !payload.containsKey('corral_destino_id')) {
+        payload['corral_destino_id'] = uuid;
+      }
+      changed = true;
+    }
+
+    final localAnimalId = (payload['_local_animal_id'] as num?)?.toInt();
+    if (localAnimalId != null && animalUuidMap.containsKey(localAnimalId)) {
+      final uuid = animalUuidMap[localAnimalId]!;
+      final ep = item['endpoint']?.toString() ?? '';
+      if (ep.contains('/pesajes')) {
+        payload.putIfAbsent('id_cerdo', () => uuid);
+      } else if (ep.contains('/sanidad')) {
+        payload.putIfAbsent('animal_id', () => uuid);
+      } else if (ep.contains('/reproduccion')) {
+        payload.putIfAbsent('hembra_id', () => uuid);
+      }
+      changed = true;
+    }
+
+    if (!changed) return item;
+    return {...item, 'payload': payload};
+  }
+
+  void _captureCreatedUuids(
+    Map<String, dynamic> item,
+    dynamic responseData,
+    Map<int, String> corralUuidMap,
+    Map<int, String> animalUuidMap,
+  ) {
+    if (responseData is! Map<String, dynamic>) return;
+    final serverUuid = responseData['id']?.toString();
+    if (serverUuid == null || serverUuid.isEmpty) return;
+    final payload = item['payload'] is Map<String, dynamic>
+        ? item['payload'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    final endpoint = item['endpoint']?.toString() ?? '';
+
+    if (endpoint.contains('/corrales')) {
+      final localId = (payload['_local_corral_id'] as num?)?.toInt();
+      if (localId != null) {
+        corralUuidMap[localId] = serverUuid;
+        LoteModel.registerUuid(localId, serverUuid);
+      }
+    } else if (endpoint.contains('/animales')) {
+      final localId = (payload['_local_animal_id'] as num?)?.toInt();
+      if (localId != null) {
+        animalUuidMap[localId] = serverUuid;
+        PorcinoModel.registerUuids(
+          id: localId,
+          uuid: serverUuid,
+          corralUuid: responseData['corral_id']?.toString(),
+        );
+      }
+    }
+  }
+
+  Future<bool> _dispatchSingleRawItem(
+    Map<String, dynamic> item, {
+    Map<int, String>? corralUuidMap,
+    Map<int, String>? animalUuidMap,
+  }) async {
     final itemId = item['id']?.toString() ?? '';
     final retries = (item['retryCount'] as num?)?.toInt() ?? 0;
 
     try {
-      await remoteDataSource.sendSingleItem(item);
+      final respData = await remoteDataSource.sendSingleItem(item);
+      if (corralUuidMap != null && animalUuidMap != null) {
+        _captureCreatedUuids(item, respData, corralUuidMap, animalUuidMap);
+      }
       if (itemId.isNotEmpty) {
         await cacheService.updateSyncItem(
           itemId,
@@ -115,9 +196,26 @@ class SyncRepositoryImpl implements SyncRepository {
         .toList();
     if (pendingFifo.isEmpty) return const Right(0);
 
+    final corralUuidMap = <int, String>{};
+    final animalUuidMap = <int, String>{};
     int totalProcessed = 0;
-    for (final item in pendingFifo) {
-      final ok = await _dispatchSingleRawItem(item);
+
+    for (final rawItem in pendingFifo) {
+      final resolvedItem = _resolvePendingRefs(rawItem, corralUuidMap, animalUuidMap);
+      if (!identical(resolvedItem, rawItem)) {
+        final itemId = resolvedItem['id']?.toString() ?? '';
+        if (itemId.isNotEmpty) {
+          await cacheService.updateSyncItem(
+            itemId,
+            payloadOverride: resolvedItem['payload'] as Map<String, dynamic>?,
+          );
+        }
+      }
+      final ok = await _dispatchSingleRawItem(
+        resolvedItem,
+        corralUuidMap: corralUuidMap,
+        animalUuidMap: animalUuidMap,
+      );
       if (ok) {
         totalProcessed++;
       }

@@ -700,7 +700,9 @@ class _RegistroDePartoCerdaH104State
                           value: null,
                           child: Text('Sin traslado'),
                         ),
-                        ...corralesPrecebo.map(
+                        ...corralesPrecebo
+                            .where((l) => l.uuid != null && l.uuid!.isNotEmpty)
+                            .map(
                           (l) => DropdownMenuItem<String?>(
                             value: l.uuid,
                             child: Text('${l.codigo} (${l.fase})'),

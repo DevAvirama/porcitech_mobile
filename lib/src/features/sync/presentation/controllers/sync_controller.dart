@@ -83,13 +83,14 @@ class SyncNotifier extends Notifier<SyncState> {
       }
     });
 
+    final initialItems = _repository.getPendingQueue();
     Future.microtask(() {
-      refreshQueue();
       loadProfile();
     });
 
     return SyncState(
-      lastCatalogSyncAt: ref.read(syncRepositoryProvider).getLastCatalogSyncAt(),
+      queueItems: initialItems,
+      lastCatalogSyncAt: _repository.getLastCatalogSyncAt(),
     );
   }
 
@@ -138,6 +139,7 @@ class SyncNotifier extends Notifier<SyncState> {
   }
 
   Future<bool> retryItem(String id) async {
+    if (state.isSyncing) return false;
     state = state.copyWith(isSyncing: true, clearMessage: true, isError: false);
     final result = await _repository.retrySingleItem(id);
     refreshQueue();

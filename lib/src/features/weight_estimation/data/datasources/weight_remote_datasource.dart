@@ -48,7 +48,7 @@ class WeightRemoteDataSourceImpl implements WeightRemoteDataSource {
         'id_cerdo': ?resolvedAnimalUuid,
         'corral_id': ?resolvedCorralUuid,
         'peso_kg': peso,
-        'metodo': tipo.toLowerCase().contains('ia') ? 'ia_vision' : 'manual',
+        'metodo': tipo.toLowerCase().contains('ia') ? 'vision_ai' : 'manual',
         'tiempo': fecha.toIso8601String(),
         if (observaciones != null && observaciones.trim().isNotEmpty)
           'observaciones': observaciones.trim(),

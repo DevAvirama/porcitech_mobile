@@ -9,6 +9,8 @@ import 'package:porcitech_mobile/src/core/widgets/tactile_button.dart';
 import 'package:porcitech_mobile/src/features/animals/presentation/controllers/animals_controller.dart';
 import 'package:porcitech_mobile/src/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:porcitech_mobile/src/features/dashboard/presentation/controllers/dashboard_controller.dart';
+import 'package:porcitech_mobile/src/features/feeding/presentation/controllers/feeding_controller.dart';
+import 'package:porcitech_mobile/src/features/health_record/presentation/controllers/health_controller.dart';
 import 'package:porcitech_mobile/src/features/sync/domain/entities/sync_item_entity.dart';
 import 'package:porcitech_mobile/src/features/sync/presentation/controllers/sync_controller.dart';
 
@@ -30,12 +32,38 @@ class _AjustesDeCuentaPorcitechState
     extends ConsumerState<AjustesDeCuentaPorcitech> {
   bool _pushNotifications = true;
 
+  String _resolveProfileName(
+    Map<String, dynamic>? profile,
+    String? fallbackName,
+  ) {
+    final fullName =
+        '${profile?['nombre']?.toString().trim() ?? ''} ${profile?['apellido']?.toString().trim() ?? ''}'
+            .trim();
+    if (fullName.isNotEmpty) return fullName;
+    final alt = profile?['name']?.toString().trim() ??
+        profile?['username']?.toString().trim() ??
+        '';
+    if (alt.isNotEmpty) return alt;
+    if (fallbackName != null && fallbackName.trim().isNotEmpty) {
+      return fallbackName.trim();
+    }
+    return 'Operario PorciTech';
+  }
+
   @override
   Widget build(BuildContext context) {
     final syncState = ref.watch(syncNotifierProvider);
     final isOffline = ref.watch(offlineModeProvider);
     final authState = ref.watch(authNotifierProvider);
     final profile = syncState.userProfile;
+    final displayName = _resolveProfileName(profile, authState.user?.name);
+    final displayRole = profile?['rol']?.toString() ??
+        profile?['role']?.toString() ??
+        authState.user?.role ??
+        'Operario de Galpón';
+    final displayGranja = profile?['granja']?.toString() ??
+        authState.user?.granja ??
+        'Unidad Porcina SENA';
 
     final lastSyncText = syncState.lastCatalogSyncAt != null
         ? DateFormat('dd/MM/yyyy HH:mm').format(syncState.lastCatalogSyncAt!)
@@ -77,9 +105,7 @@ class _AjustesDeCuentaPorcitechState
                     radius: 30,
                     backgroundColor: AppColors.mintSoft,
                     child: Text(
-                      (authState.user?.name.isNotEmpty == true)
-                          ? authState.user!.name.substring(0, 1).toUpperCase()
-                          : 'P',
+                      displayName.substring(0, 1).toUpperCase(),
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
@@ -93,9 +119,7 @@ class _AjustesDeCuentaPorcitechState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          profile?['name']?.toString() ??
-                              authState.user?.name ??
-                              'Operario PorciTech',
+                          displayName,
                           style: const TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
@@ -104,9 +128,7 @@ class _AjustesDeCuentaPorcitechState
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          profile?['role']?.toString() ??
-                              authState.user?.role ??
-                              'Operario de Galpón',
+                          displayRole,
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -115,9 +137,7 @@ class _AjustesDeCuentaPorcitechState
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          profile?['granja']?.toString() ??
-                              authState.user?.granja ??
-                              'Unidad Porcina SENA',
+                          displayGranja,
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.slateMuted,
@@ -195,6 +215,9 @@ class _AjustesDeCuentaPorcitechState
                                 .downloadOfflineCatalog();
                             if (ok) {
                               ref.read(animalsNotifierProvider.notifier).fetchPorcinos();
+                              ref.read(animalsNotifierProvider.notifier).fetchLotes();
+                              ref.read(healthNotifierProvider.notifier).loadSanidadData();
+                              ref.read(feedingNotifierProvider.notifier).loadData();
                               ref.read(dashboardNotifierProvider.notifier).loadSummary();
                             }
                           },

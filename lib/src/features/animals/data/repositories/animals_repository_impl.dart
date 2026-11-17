@@ -161,7 +161,20 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
       diasEnFase: 1,
     );
 
+    final normalizedEstado = () {
+      final f = estado.trim().toLowerCase();
+      if (f.contains('gesta')) return 'gestacion';
+      if (f.contains('mater') || f.contains('lacta')) return 'lactante';
+      if (f.contains('prece') || f.contains('deste')) return 'precebo';
+      if (f.contains('levan')) return 'levante';
+      if (f.contains('cuaren')) return 'cuarentena';
+      if (f.contains('enfer')) return 'enfermo';
+      if (f.contains('reprod') || f.contains('activ')) return 'activo';
+      return 'engorde';
+    }();
+
     final offlineAnimalPayload = <String, dynamic>{
+      '_local_animal_id': newModel.id,
       'codigo_arete': codigo.trim(),
       'codigo_qr': 'QR-${codigo.trim()}',
       if (nombreAlias != null && nombreAlias.trim().isNotEmpty)
@@ -169,8 +182,9 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
       'raza': raza,
       'sexo': sexo.toLowerCase().contains('macho') ? 'macho' : 'hembra',
       'fecha_nacimiento': fechaNacimiento.toIso8601String().split('T').first,
-      'estado': estado.toLowerCase(),
+      'estado': normalizedEstado,
       'corral_id': ?resolvedCorralUuid,
+      if (resolvedCorralUuid == null) '_local_corral_id': loteId,
       'peso_actual_kg': pesoInicialKg,
     };
 
@@ -194,12 +208,15 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
         fechaNacimiento: fechaNacimiento,
         loteId: loteId,
         corralUuid: resolvedCorralUuid,
-        estado: estado,
+        estado: normalizedEstado,
         pesoInicialKg: pesoInicialKg,
       );
       _addPorcinoToCache(remote);
       return Right(remote);
-    } on AppException {
+    } on AppException catch (e) {
+      if (e.statusCode != null && e.statusCode! >= 400 && e.statusCode! < 500) {
+        return Left(ServerFailure(e.message, e.statusCode));
+      }
       await cacheService.enqueueSyncItem(
         endpoint: '/animales',
         method: 'POST',
@@ -268,6 +285,7 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
     }
 
     final offlineLotePayload = <String, dynamic>{
+      '_local_corral_id': model.id,
       'codigo': codigo.trim(),
       'descripcion': nombre.trim().isNotEmpty ? '${nombre.trim()} • $galpon' : galpon,
       'fase': faseBackend,
@@ -282,6 +300,7 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
         payload: offlineLotePayload,
         description: 'Creación de corral $codigo ($nombre)',
       );
+      _addLoteToCache(model);
       return Right(model);
     }
 
@@ -293,18 +312,33 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
         galpon: galpon,
         capacidadMaxima: capacidadMaxima,
       );
+      _addLoteToCache(remote);
       return Right(remote);
-    } on AppException {
+    } on AppException catch (e) {
+      if (e.statusCode != null && e.statusCode! >= 400 && e.statusCode! < 500) {
+        return Left(ServerFailure(e.message, e.statusCode));
+      }
       await cacheService.enqueueSyncItem(
         endpoint: '/corrales',
         method: 'POST',
         payload: offlineLotePayload,
         description: 'Creación de corral $codigo ($nombre)',
       );
+      _addLoteToCache(model);
       return Right(model);
     } catch (e) {
       return Left(UnexpectedFailure(e.toString()));
     }
+  }
+
+  void _addLoteToCache(LoteModel model) {
+    final cached = _getCachedOrSeedLotes();
+    cached.insert(0, model);
+    final jsonList = cached.map((e) {
+      if (e is LoteModel) return e.toJson();
+      return (e as dynamic).toJson();
+    }).toList();
+    cacheService.cacheJson(cacheService.keyCachedLotes, jsonList);
   }
 
   void _addPorcinoToCache(PorcinoModel model) {

@@ -163,9 +163,12 @@ class _ListadoDeLotesYPorcinosPorcitechState
                               ),
                               items: const [
                                 DropdownMenuItem(value: 'engorde', child: Text('Engorde / Ceba')),
-                                DropdownMenuItem(value: 'lactancia', child: Text('Lactancia')),
-                                DropdownMenuItem(value: 'reproduccion', child: Text('Reproducción')),
+                                DropdownMenuItem(value: 'lactante', child: Text('Lactancia')),
+                                DropdownMenuItem(value: 'gestacion', child: Text('Gestación')),
+                                DropdownMenuItem(value: 'precebo', child: Text('Precebo')),
+                                DropdownMenuItem(value: 'levante', child: Text('Levante')),
                                 DropdownMenuItem(value: 'cuarentena', child: Text('Cuarentena')),
+                                DropdownMenuItem(value: 'activo', child: Text('Activo')),
                               ],
                               onChanged: (val) {
                                 if (val != null) setModalState(() => estadoSelected = val);
@@ -249,7 +252,10 @@ class _ListadoDeLotesYPorcinosPorcitechState
           },
         );
       },
-    );
+    ).whenComplete(() {
+      codigoController.dispose();
+      pesoController.dispose();
+    });
   }
 
   void _showAddCorralDialog() {
@@ -399,7 +405,11 @@ class _ListadoDeLotesYPorcinosPorcitechState
           },
         );
       },
-    );
+    ).whenComplete(() {
+      codigoController.dispose();
+      nombreController.dispose();
+      capacidadController.dispose();
+    });
   }
 
   @override

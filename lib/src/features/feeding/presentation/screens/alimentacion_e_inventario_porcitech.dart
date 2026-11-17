@@ -154,10 +154,14 @@ class _AlimentacionEInventarioPorcitechState
     List<LoteEntity> lotes,
     List<InventoryItemEntity> alimentos,
   ) {
-    final corralActivo =
-        _corralSeleccionado ?? (lotes.isNotEmpty ? lotes.first : null);
-    final alimentoActivo =
-        _alimentoSeleccionado ?? (alimentos.isNotEmpty ? alimentos.first : null);
+    final corralActivo = lotes.cast<LoteEntity?>().firstWhere(
+          (l) => l?.id == _corralSeleccionado?.id,
+          orElse: () => lotes.isNotEmpty ? lotes.first : null,
+        );
+    final alimentoActivo = alimentos.cast<InventoryItemEntity?>().firstWhere(
+          (a) => a?.id == _alimentoSeleccionado?.id,
+          orElse: () => alimentos.isNotEmpty ? alimentos.first : null,
+        );
 
     return RefreshIndicator(
       color: AppColors.senaGreen,

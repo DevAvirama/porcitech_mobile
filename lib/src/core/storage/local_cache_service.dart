@@ -8,8 +8,15 @@ import 'package:uuid/uuid.dart';
 class LocalCacheService {
   final SharedPreferences _prefs;
   static const Uuid _uuid = Uuid();
+  Future<void> _queueLock = Future.value();
 
   LocalCacheService(this._prefs);
+
+  Future<T> _withQueueLock<T>(Future<T> Function() action) {
+    final next = _queueLock.then((_) => action(), onError: (_) => action());
+    _queueLock = next.then((_) {}, onError: (_) {});
+    return next;
+  }
 
   static const String _keyOfflineMode = 'porcitech_offline_mode_enabled';
   static const String _keyOfflineQueue = 'porcitech_sync_offline_queue';
@@ -72,28 +79,30 @@ class LocalCacheService {
     required Map<String, dynamic> payload,
     required String description,
     String? filePath,
-  }) async {
-    final queue = getOfflineQueue();
-    final eventUuid = _uuid.v4();
-    final enrichedPayload = Map<String, dynamic>.from(payload);
-    enrichedPayload.putIfAbsent('id_local', () => eventUuid);
+  }) {
+    return _withQueueLock(() async {
+      final queue = getOfflineQueue();
+      final eventUuid = _uuid.v4();
+      final enrichedPayload = Map<String, dynamic>.from(payload);
+      enrichedPayload.putIfAbsent('id_local', () => eventUuid);
 
-    final item = <String, dynamic>{
-      'id': eventUuid,
-      'idLocal': eventUuid,
-      'endpoint': endpoint,
-      'method': method,
-      'payload': enrichedPayload,
-      'description': description,
-      'status': 'pendiente',
-      'errorMessage': null,
-      'retryCount': 0,
-      if (filePath != null && filePath.isNotEmpty) 'filePath': filePath,
-      'createdAt': DateTime.now().toIso8601String(),
-    };
-    queue.add(item);
-    await _prefs.setString(_keyOfflineQueue, jsonEncode(queue));
-    return eventUuid;
+      final item = <String, dynamic>{
+        'id': eventUuid,
+        'idLocal': eventUuid,
+        'endpoint': endpoint,
+        'method': method,
+        'payload': enrichedPayload,
+        'description': description,
+        'status': 'pendiente',
+        'errorMessage': null,
+        'retryCount': 0,
+        if (filePath != null && filePath.isNotEmpty) 'filePath': filePath,
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+      queue.add(item);
+      await _prefs.setString(_keyOfflineQueue, jsonEncode(queue));
+      return eventUuid;
+    });
   }
 
   Future<void> updateSyncItem(
@@ -102,43 +111,53 @@ class LocalCacheService {
     String? errorMessage,
     bool clearError = false,
     int? retryCount,
-  }) async {
-    final queue = getOfflineQueue();
-    final updated = queue.map((item) {
-      if (item['id']?.toString() == id) {
-        final copy = Map<String, dynamic>.from(item);
-        if (status != null) copy['status'] = status;
-        if (clearError) {
-          copy['errorMessage'] = null;
-        } else if (errorMessage != null) {
-          copy['errorMessage'] = errorMessage;
+    Map<String, dynamic>? payloadOverride,
+  }) {
+    return _withQueueLock(() async {
+      final queue = getOfflineQueue();
+      final updated = queue.map((item) {
+        if (item['id']?.toString() == id) {
+          final copy = Map<String, dynamic>.from(item);
+          if (status != null) copy['status'] = status;
+          if (clearError) {
+            copy['errorMessage'] = null;
+          } else if (errorMessage != null) {
+            copy['errorMessage'] = errorMessage;
+          }
+          if (retryCount != null) copy['retryCount'] = retryCount;
+          if (payloadOverride != null) copy['payload'] = payloadOverride;
+          return copy;
         }
-        if (retryCount != null) copy['retryCount'] = retryCount;
-        return copy;
-      }
-      return item;
-    }).toList();
-    await _prefs.setString(_keyOfflineQueue, jsonEncode(updated));
+        return item;
+      }).toList();
+      await _prefs.setString(_keyOfflineQueue, jsonEncode(updated));
+    });
   }
 
   Future<void> markSyncItemForRetry(String id) async {
     await updateSyncItem(id, status: 'pendiente', clearError: true);
   }
 
-  Future<void> removeSyncItem(String id) async {
-    final queue = getOfflineQueue();
-    queue.removeWhere((item) => item['id']?.toString() == id);
-    await _prefs.setString(_keyOfflineQueue, jsonEncode(queue));
+  Future<void> removeSyncItem(String id) {
+    return _withQueueLock(() async {
+      final queue = getOfflineQueue();
+      queue.removeWhere((item) => item['id']?.toString() == id);
+      await _prefs.setString(_keyOfflineQueue, jsonEncode(queue));
+    });
   }
 
-  Future<void> clearSentSyncItems() async {
-    final queue = getOfflineQueue();
-    queue.removeWhere((item) => item['status']?.toString() == 'enviado');
-    await _prefs.setString(_keyOfflineQueue, jsonEncode(queue));
+  Future<void> clearSentSyncItems() {
+    return _withQueueLock(() async {
+      final queue = getOfflineQueue();
+      queue.removeWhere((item) => item['status']?.toString() == 'enviado');
+      await _prefs.setString(_keyOfflineQueue, jsonEncode(queue));
+    });
   }
 
-  Future<void> clearOfflineQueue() async {
-    await _prefs.remove(_keyOfflineQueue);
+  Future<void> clearOfflineQueue() {
+    return _withQueueLock(() async {
+      await _prefs.remove(_keyOfflineQueue);
+    });
   }
 
   // --- Caché de Registros Locales (Expedientes, Lotes, Inventario, Sanidad) ---

@@ -183,6 +183,8 @@ class _MainDashboardFlowState extends ConsumerState<MainDashboardFlow> {
 
   @override
   Widget build(BuildContext context) {
+    // Mantener activo SyncNotifier para auto-sincronización al recuperar conectividad
+    ref.watch(syncNotifierProvider);
     return DashboardDeCampoPorcitech(
       onScanQr: _openScanner,
       onOpenPesaje: _selectAndOpenPesaje,
@@ -241,6 +243,7 @@ class _MainDashboardFlowState extends ConsumerState<MainDashboardFlow> {
         },
         onPesajeGuardado: () {
           ref.read(animalsNotifierProvider.notifier).fetchPorcinos();
+          ref.read(syncNotifierProvider.notifier).refreshQueue();
           Navigator.of(context).pop();
         },
       ),
@@ -254,6 +257,7 @@ class _MainDashboardFlowState extends ConsumerState<MainDashboardFlow> {
         porcino: target,
         onEventoGuardado: () {
           ref.read(animalsNotifierProvider.notifier).fetchPorcinos();
+          ref.read(syncNotifierProvider.notifier).refreshQueue();
           Navigator.of(context).pop();
         },
       ),

@@ -39,12 +39,13 @@ class AnimalsRemoteDataSourceImpl implements AnimalsRemoteDataSource {
   String _normalizeFaseForBackend(String rawFase) {
     final f = rawFase.trim().toLowerCase();
     if (f.contains('gesta')) return 'gestacion';
-    if (f.contains('mater') || f.contains('lacta')) return 'maternidad';
+    if (f.contains('mater') || f.contains('lacta')) return 'lactante';
     if (f.contains('prece') || f.contains('deste')) return 'precebo';
     if (f.contains('levan')) return 'levante';
     if (f.contains('cuaren')) return 'cuarentena';
     if (f.contains('enfer')) return 'enfermo';
-    return 'ceba';
+    if (f.contains('reprod') || f.contains('activ')) return 'activo';
+    return 'engorde';
   }
 
   @override

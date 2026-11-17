@@ -112,7 +112,7 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
           ),
         ],
       ),
-    );
+    ).whenComplete(controller.dispose);
   }
 
   Future<void> _showSlideUpSheet(PorcinoEntity porcino) {
@@ -373,6 +373,6 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
           ),
         ],
       ),
-    );
+    ).whenComplete(controller.dispose);
   }
 }

@@ -11,6 +11,23 @@ class LoteModel extends LoteEntity {
     }
   }
 
+  /// Convierte de forma determinista un UUID o entero en el ID numérico de UI.
+  static int parseNumericId(dynamic rawId, {int fallback = 1}) {
+    if (rawId is int) return rawId;
+    if (rawId != null) {
+      final idStr = rawId.toString().trim();
+      final asInt = int.tryParse(idStr);
+      if (asInt != null) return asInt;
+      final hexClean = idStr.replaceAll('-', '');
+      if (hexClean.length >= 8) {
+        return int.tryParse(hexClean.substring(0, 8), radix: 16) ?? idStr.hashCode.abs();
+      } else if (idStr.isNotEmpty) {
+        return idStr.hashCode.abs();
+      }
+    }
+    return fallback;
+  }
+
   const LoteModel({
     required super.id,
     super.uuid,
@@ -25,27 +42,15 @@ class LoteModel extends LoteEntity {
   });
 
   factory LoteModel.fromJson(Map<String, dynamic> json) {
-    int parsedId = 1;
     String? rawUuid = json['uuid']?.toString().trim();
     final rawId = json['id'];
-    if (rawId is int) {
-      parsedId = rawId;
-    } else if (rawId != null) {
+    if (rawId != null && rawId is! int) {
       final idStr = rawId.toString().trim();
-      final asInt = int.tryParse(idStr);
-      if (asInt != null) {
-        parsedId = asInt;
-      } else {
+      if (int.tryParse(idStr) == null && idStr.isNotEmpty) {
         rawUuid = idStr;
-        final hexClean = idStr.replaceAll('-', '');
-        if (hexClean.length >= 8) {
-          parsedId =
-              int.tryParse(hexClean.substring(0, 8), radix: 16) ?? idStr.hashCode.abs();
-        } else if (idStr.isNotEmpty) {
-          parsedId = idStr.hashCode.abs();
-        }
       }
     }
+    final int parsedId = parseNumericId(rawId);
     registerUuid(parsedId, rawUuid);
 
     final codigo = json['codigo'] as String? ?? 'COR-01';

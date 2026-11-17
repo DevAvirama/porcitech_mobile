@@ -36,10 +36,13 @@ class AuthInterceptor extends QueuedInterceptor {
   }
 
   @override
-  void onError(DioException err, ErrorInterceptorHandler handler) {
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
     if (err.response?.statusCode == 401) {
       // Sesión revocada o token expirado en FastAPI
-      secureStorage.clearAll();
+      await secureStorage.clearAll();
       onSessionExpired?.call();
     }
     return handler.next(err);

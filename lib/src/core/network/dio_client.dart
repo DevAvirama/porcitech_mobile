@@ -193,6 +193,7 @@ class DioClient {
 
     switch (statusCode) {
       case HttpStatus.badRequest:
+      case HttpStatus.unprocessableEntity:
         return BadRequestException(message, statusCode);
       case HttpStatus.unauthorized:
         return UnauthorizedException(message, statusCode);

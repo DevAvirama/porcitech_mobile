@@ -1,4 +1,5 @@
 import '../../domain/entities/porcino_entity.dart';
+import 'lote_model.dart';
 
 class PorcinoModel extends PorcinoEntity {
   /// Registro en memoria que asocia el ID entero de la UI con el UUID real de PostgreSQL.
@@ -108,30 +109,24 @@ class PorcinoModel extends PorcinoEntity {
               ]
             : const []);
 
-    int parsedId = 1;
     String? rawUuid = json['uuid']?.toString().trim();
     final rawId = json['id'];
-    if (rawId is int) {
-      parsedId = rawId;
-    } else if (rawId != null) {
+    if (rawId != null && rawId is! int) {
       final idStr = rawId.toString().trim();
-      final asInt = int.tryParse(idStr);
-      if (asInt != null) {
-        parsedId = asInt;
-      } else {
+      if (int.tryParse(idStr) == null && idStr.isNotEmpty) {
         rawUuid = idStr;
-        final hexClean = idStr.replaceAll('-', '');
-        if (hexClean.length >= 8) {
-          parsedId =
-              int.tryParse(hexClean.substring(0, 8), radix: 16) ?? idStr.hashCode.abs();
-        } else if (idStr.isNotEmpty) {
-          parsedId = idStr.hashCode.abs();
-        }
       }
     }
+    final int parsedId = LoteModel.parseNumericId(rawId);
 
     final rawCorralId = (json['corral_id'] ?? json['corralUuid'])?.toString().trim();
     registerUuids(id: parsedId, uuid: rawUuid, corralUuid: rawCorralId);
+
+    final int parsedLoteId = (rawCorralId != null && rawCorralId.isNotEmpty)
+        ? LoteModel.parseNumericId(rawCorralId)
+        : (json['lote'] is int
+            ? json['lote'] as int
+            : (json['lote_id'] is int ? json['lote_id'] as int : 1));
 
     final rawEstado = json['estado']?.toString() ?? '';
     final estadoSanitario = json['estado_sanitario'] as String? ??
@@ -158,9 +153,7 @@ class PorcinoModel extends PorcinoEntity {
       raza: json['raza'] as String? ?? 'Landrace',
       sexo: _formatSexo(json['sexo']?.toString() ?? 'Hembra'),
       fechaNacimiento: fechaNac,
-      loteId: json['lote'] is int
-          ? json['lote'] as int
-          : (json['lote_id'] is int ? json['lote_id'] as int : 1),
+      loteId: parsedLoteId,
       loteNombre: json['corral_codigo'] as String? ??
           json['lote_nombre'] as String? ??
           'Sin corral asignado',

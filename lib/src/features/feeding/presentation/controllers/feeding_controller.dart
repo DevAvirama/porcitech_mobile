@@ -249,6 +249,22 @@ class FeedingNotifier extends Notifier<FeedingState> {
       await _client.post(ApiConstants.raciones, data: payload);
       await loadData();
       return true;
+    } on AppException catch (e) {
+      if (e.statusCode != null && e.statusCode! >= 400 && e.statusCode! < 500) {
+        state = state.copyWith(isLoading: false, errorMessage: e.message);
+        return false;
+      }
+      await _cache.enqueueSyncItem(
+        endpoint: ApiConstants.raciones,
+        method: 'POST',
+        payload: payload,
+        description: 'Ración $corralCodigo: $cantidadKg kg ($alimentoNombre)',
+      );
+      state = state.copyWith(
+        isLoading: false,
+        raciones: [nuevaRacion, ...state.raciones],
+      );
+      return true;
     } catch (_) {
       await _cache.enqueueSyncItem(
         endpoint: ApiConstants.raciones,

@@ -58,6 +58,7 @@ class HealthRepositoryImpl implements HealthRepository {
 
     final offlinePayload = <String, dynamic>{
       'animal_id': ?resolvedAnimalUuid,
+      if (resolvedAnimalUuid == null) '_local_animal_id': porcinoId,
       'corral_id': ?resolvedCorralUuid,
       'medicamento_id': ?medicamentoUuid,
       'tipo_evento': tipoEvento,
@@ -103,7 +104,10 @@ class HealthRepositoryImpl implements HealthRepository {
         observaciones: observaciones,
       );
       return Right(remote);
-    } on AppException {
+    } on AppException catch (e) {
+      if (e.statusCode != null && e.statusCode! >= 400 && e.statusCode! < 500) {
+        return Left(ServerFailure(e.message, e.statusCode));
+      }
       await cacheService.enqueueSyncItem(
         endpoint: ApiConstants.eventosSanitarios,
         method: 'POST',

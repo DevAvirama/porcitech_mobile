@@ -368,7 +368,7 @@ class DetallePorcino4092Porcitech extends ConsumerWidget {
         minY: minY,
         maxY: maxY,
         minX: 0,
-        maxX: (items.length - 1).toDouble(),
+        maxX: items.length <= 1 ? 1.0 : (items.length - 1).toDouble(),
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,

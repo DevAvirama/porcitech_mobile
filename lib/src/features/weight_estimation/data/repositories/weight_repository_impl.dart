@@ -40,9 +40,10 @@ class WeightRepositoryImpl implements WeightRepository {
     final resolvedCorralUuid = corralUuid ?? PorcinoModel.resolveCorralUuid(porcinoId);
     final offlinePayload = <String, dynamic>{
       'id_cerdo': ?resolvedAnimalUuid,
+      if (resolvedAnimalUuid == null) '_local_animal_id': porcinoId,
       'corral_id': ?resolvedCorralUuid,
       'peso_kg': peso,
-      'metodo': tipo.toLowerCase().contains('ia') ? 'ia_vision' : 'manual',
+      'metodo': tipo.toLowerCase().contains('ia') ? 'vision_ai' : 'manual',
       'tiempo': fecha.toIso8601String(),
       if (observaciones != null && observaciones.trim().isNotEmpty)
         'observaciones': observaciones.trim(),
@@ -69,7 +70,10 @@ class WeightRepositoryImpl implements WeightRepository {
         observaciones: observaciones,
       );
       return Right(remote);
-    } on AppException {
+    } on AppException catch (e) {
+      if (e.statusCode != null && e.statusCode! >= 400 && e.statusCode! < 500) {
+        return Left(ServerFailure(e.message, e.statusCode));
+      }
       await cacheService.enqueueSyncItem(
         endpoint: ApiConstants.pesos,
         method: 'POST',
@@ -96,8 +100,9 @@ class WeightRepositoryImpl implements WeightRepository {
     Future<IaWeightEstimationResult> queueOfflinePhoto() async {
       final offlinePayload = <String, dynamic>{
         'id_cerdo': ?resolvedAnimalUuid,
+        if (resolvedAnimalUuid == null) '_local_animal_id': porcinoId,
         'corral_id': ?resolvedCorralUuid,
-        'persistir': persistir.toString(),
+        'persistir': 'true',
       };
       await cacheService.enqueueSyncItem(
         endpoint: ApiConstants.iaEstimarPeso,

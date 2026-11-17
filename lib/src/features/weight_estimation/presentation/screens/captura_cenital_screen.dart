@@ -51,6 +51,7 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
               animalUuid: widget.porcino.uuid,
               corralUuid: widget.porcino.corralUuid,
               imageFile: _capturedImage!,
+              persistir: false,
             );
 
         if (mounted) {
@@ -286,7 +287,6 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
                             icon: Icons.check_rounded,
                             onPressed: () {
                               widget.onPesoAplicado(_iaResult!.pesoEstimado);
-                              Navigator.pop(context);
                             },
                           ),
                         ],
