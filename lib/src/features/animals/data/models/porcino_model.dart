@@ -9,6 +9,9 @@ class PorcinoModel extends PorcinoEntity {
   static String? resolveUuid(int id) => _uuidRegistry[id];
   static String? resolveCorralUuid(int id) => _corralUuidRegistry[id];
 
+  static Map<int, String> get uuidRegistrySnapshot =>
+      Map<int, String>.unmodifiable(_uuidRegistry);
+
   static void registerUuids({required int id, String? uuid, String? corralUuid}) {
     if (uuid != null && uuid.isNotEmpty) {
       _uuidRegistry[id] = uuid;

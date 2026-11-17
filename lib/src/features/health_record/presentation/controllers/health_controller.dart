@@ -65,11 +65,11 @@ class HealthNotifier extends Notifier<HealthState> {
 
   HealthRepository get _repository => ref.read(healthRepositoryProvider);
 
-  Future<void> loadSanidadData({String? animalUuid}) async {
+  Future<void> loadSanidadData({String? animalUuid, String? corralId}) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     final tratRes = await _repository.getTratamientos(animalUuid: animalUuid);
     final alertRes = await _repository.getAlertasRetiro();
-    final protoRes = await _repository.getProtocolosBioseguridad();
+    final protoRes = await _repository.getProtocolosBioseguridad(corralId: corralId);
 
     state = state.copyWith(
       isLoading: false,

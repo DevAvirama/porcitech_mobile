@@ -9,6 +9,8 @@ import 'package:porcitech_mobile/src/core/widgets/tactile_button.dart';
 import 'package:porcitech_mobile/src/core/widgets/withdrawal_alert_banner.dart';
 import 'package:porcitech_mobile/src/features/animals/domain/entities/porcino_entity.dart';
 import 'package:porcitech_mobile/src/features/animals/presentation/controllers/animals_controller.dart';
+import 'package:porcitech_mobile/src/features/feeding/domain/entities/feeding_entity.dart';
+import 'package:porcitech_mobile/src/features/feeding/presentation/controllers/feeding_controller.dart';
 import 'package:porcitech_mobile/src/features/health_record/presentation/controllers/health_controller.dart';
 import 'package:porcitech_mobile/src/features/sync/presentation/controllers/sync_controller.dart';
 
@@ -41,11 +43,37 @@ class _RegistroDeVacunacionPorcitechState
 
   String _tipoEvento = 'vacuna';
   String _medicamentoSeleccionado = 'Vacuna Peste Porcina Clásica (PPC)';
+  String? _selectedMedicamentoId;
   double _dosisMl = 2.0;
   String _viaAplicacion = 'Intramuscular en tabla del cuello';
   bool _aplicacionPorLote = false;
   String? _selectedLoteUuid;
   String? _selectedBioCorralUuid;
+
+  List<InventoryItemEntity> _filtrarInsumosSanitarios(
+    List<InventoryItemEntity> todos,
+  ) {
+    final filtrados = todos.where((i) {
+      final cod = i.categoriaCodigo.toLowerCase();
+      final nom = i.categoriaNombre.toLowerCase();
+      return cod.contains('med') ||
+          cod.contains('san') ||
+          cod.contains('bio') ||
+          cod.contains('sup') ||
+          cod.contains('vac') ||
+          nom.contains('med') ||
+          nom.contains('san') ||
+          nom.contains('bio') ||
+          nom.contains('vac') ||
+          nom.contains('farm');
+    }).toList();
+    if (filtrados.isNotEmpty) return filtrados;
+    final noAlimento = todos.where((i) {
+      final cod = i.categoriaCodigo.toLowerCase();
+      return !cod.startsWith('alim');
+    }).toList();
+    return noAlimento.isNotEmpty ? noAlimento : todos;
+  }
 
   final List<String> _medicamentosComunes = [
     'Vacuna Peste Porcina Clásica (PPC)',
@@ -106,10 +134,28 @@ class _RegistroDeVacunacionPorcitechState
         esPorLote ? (selectedLote.cantidadPorcinos > 0 ? selectedLote.cantidadPorcinos : 1) : 1;
     final double dosisTotalCalculada = _dosisMl * cantidadAnimales;
 
+    final medInsumos = _filtrarInsumosSanitarios(
+      ref.read(feedingNotifierProvider).insumos,
+    );
+    String? effectiveMedicamentoUuid = _selectedMedicamentoId;
+    if (effectiveMedicamentoUuid == null || effectiveMedicamentoUuid.isEmpty) {
+      final targetName = _medicamentoSeleccionado.trim().toLowerCase();
+      final match = medInsumos.cast<InventoryItemEntity?>().firstWhere(
+            (i) =>
+                i != null &&
+                (i.nombre.toLowerCase() == targetName ||
+                    i.nombre.toLowerCase().contains(targetName) ||
+                    targetName.contains(i.nombre.toLowerCase())),
+            orElse: () => null,
+          );
+      effectiveMedicamentoUuid = match?.id;
+    }
+
     final success = await ref.read(healthNotifierProvider.notifier).registrarEvento(
           porcinoId: _porcino.id,
           animalUuid: esPorLote ? null : _porcino.uuid,
           corralUuid: esPorLote ? selectedLote.uuid : _porcino.corralUuid,
+          medicamentoUuid: effectiveMedicamentoUuid,
           tipo: _tipoEvento,
           medicamento: _medicamentoSeleccionado,
           loteBiologico: _loteBiologicoController.text.trim(),
@@ -123,6 +169,9 @@ class _RegistroDeVacunacionPorcitechState
         );
 
     ref.read(syncNotifierProvider.notifier).refreshQueue();
+    if (effectiveMedicamentoUuid != null && effectiveMedicamentoUuid.isNotEmpty) {
+      ref.read(feedingNotifierProvider.notifier).loadData();
+    }
 
     if (success && mounted) {
       _loteBiologicoController.clear();
@@ -202,6 +251,12 @@ class _RegistroDeVacunacionPorcitechState
     final diasRetiroActual = _diasRetiro;
     final fechaFinRetiro = DateTime.now().add(Duration(days: diasRetiroActual));
     final lotes = ref.watch(animalsNotifierProvider).lotes;
+    final medInsumos = _filtrarInsumosSanitarios(
+      ref.watch(feedingNotifierProvider).insumos,
+    );
+    final selectedInsumoId = medInsumos.any((i) => i.id == _selectedMedicamentoId)
+        ? _selectedMedicamentoId
+        : null;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -363,14 +418,64 @@ class _RegistroDeVacunacionPorcitechState
                         : AppColors.slateBorder,
                   ),
                   onSelected: (_) {
+                    final matched = medInsumos.cast<InventoryItemEntity?>().firstWhere(
+                          (i) =>
+                              i != null &&
+                              (i.nombre.toLowerCase() == med.toLowerCase() ||
+                                  i.nombre.toLowerCase().contains(med.toLowerCase())),
+                          orElse: () => null,
+                        );
                     setState(() {
                       _medicamentoSeleccionado = med;
+                      _selectedMedicamentoId = matched?.id;
                       _tipoEvento = med.contains('Vacuna') ? 'vacuna' : 'tratamiento';
                     });
                   },
                 );
               }).toList(),
             ),
+            if (medInsumos.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String?>(
+                key: ValueKey('med_insumo_$selectedInsumoId'),
+                initialValue: selectedInsumoId,
+                decoration: const InputDecoration(
+                  labelText: 'Descontar de Bodega (Opcional — HU11)',
+                  prefixIcon: Icon(Icons.inventory_2_outlined, color: AppColors.senaBlue),
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('Sin descuento directo de inventario'),
+                  ),
+                  ...medInsumos.map(
+                    (item) => DropdownMenuItem<String?>(
+                      value: item.id,
+                      child: Text(
+                        '[${item.codigoSku}] ${item.nombre} (${item.stockActual.toStringAsFixed(1)} ${item.unidadMedida})',
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    ),
+                  ),
+                ],
+                onChanged: (val) {
+                  final picked = medInsumos.cast<InventoryItemEntity?>().firstWhere(
+                        (i) => i?.id == val,
+                        orElse: () => null,
+                      );
+                  setState(() {
+                    _selectedMedicamentoId = val;
+                    if (picked != null) {
+                      _medicamentoSeleccionado = picked.nombre;
+                      _tipoEvento = picked.nombre.toLowerCase().contains('vacuna')
+                          ? 'vacuna'
+                          : 'tratamiento';
+                    }
+                  });
+                },
+              ),
+            ],
             const SizedBox(height: 14),
 
             WithdrawalAlertBanner(
@@ -687,7 +792,9 @@ class _RegistroDeVacunacionPorcitechState
 
     return RefreshIndicator(
       color: AppColors.senaGreen,
-      onRefresh: () => ref.read(healthNotifierProvider.notifier).loadSanidadData(),
+      onRefresh: () => ref
+          .read(healthNotifierProvider.notifier)
+          .loadSanidadData(corralId: _selectedBioCorralUuid),
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -726,7 +833,10 @@ class _RegistroDeVacunacionPorcitechState
                       ),
                     ),
               ],
-              onChanged: (val) => setState(() => _selectedBioCorralUuid = val),
+              onChanged: (val) {
+                setState(() => _selectedBioCorralUuid = val);
+                ref.read(healthNotifierProvider.notifier).loadSanidadData(corralId: val);
+              },
             ),
           const SizedBox(height: 14),
           ...healthState.protocolos.map(

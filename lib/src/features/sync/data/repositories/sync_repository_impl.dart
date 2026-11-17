@@ -81,12 +81,65 @@ class SyncRepositoryImpl implements SyncRepository {
     return {...item, 'payload': payload};
   }
 
-  void _captureCreatedUuids(
+  void _hydrateUuidRegistriesFromCache() {
+    final cachedLotes = cacheService.getCachedJson(cacheService.keyCachedLotes);
+    if (cachedLotes is List) {
+      for (final raw in cachedLotes.whereType<Map<String, dynamic>>()) {
+        LoteModel.fromJson(raw);
+      }
+    }
+    final cachedAnimals = cacheService.getCachedJson(cacheService.keyCachedAnimals);
+    if (cachedAnimals is List) {
+      for (final raw in cachedAnimals.whereType<Map<String, dynamic>>()) {
+        PorcinoModel.fromJson(raw);
+      }
+    }
+  }
+
+  Future<void> _persistCreatedUuidInCache({
+    int? localCorralId,
+    int? localAnimalId,
+    required String serverUuid,
+    String? corralUuid,
+  }) async {
+    if (localCorralId != null) {
+      final cachedLotes = cacheService.getCachedJson(cacheService.keyCachedLotes);
+      if (cachedLotes is List) {
+        final updated = cachedLotes.whereType<Map<String, dynamic>>().map((m) {
+          if (LoteModel.parseNumericId(m['id']) == localCorralId) {
+            return {...m, 'uuid': serverUuid};
+          }
+          return m;
+        }).toList();
+        await cacheService.cacheJson(cacheService.keyCachedLotes, updated);
+      }
+    }
+    if (localAnimalId != null) {
+      final cachedAnimals =
+          cacheService.getCachedJson(cacheService.keyCachedAnimals);
+      if (cachedAnimals is List) {
+        final updated = cachedAnimals.whereType<Map<String, dynamic>>().map((m) {
+          if (LoteModel.parseNumericId(m['id']) == localAnimalId) {
+            return {
+              ...m,
+              'uuid': serverUuid,
+              if (corralUuid != null && corralUuid.isNotEmpty)
+                'corral_id': corralUuid,
+            };
+          }
+          return m;
+        }).toList();
+        await cacheService.cacheJson(cacheService.keyCachedAnimals, updated);
+      }
+    }
+  }
+
+  Future<void> _captureCreatedUuids(
     Map<String, dynamic> item,
     dynamic responseData,
     Map<int, String> corralUuidMap,
     Map<int, String> animalUuidMap,
-  ) {
+  ) async {
     if (responseData is! Map<String, dynamic>) return;
     final serverUuid = responseData['id']?.toString();
     if (serverUuid == null || serverUuid.isEmpty) return;
@@ -100,15 +153,25 @@ class SyncRepositoryImpl implements SyncRepository {
       if (localId != null) {
         corralUuidMap[localId] = serverUuid;
         LoteModel.registerUuid(localId, serverUuid);
+        await _persistCreatedUuidInCache(
+          localCorralId: localId,
+          serverUuid: serverUuid,
+        );
       }
     } else if (endpoint.contains('/animales')) {
       final localId = (payload['_local_animal_id'] as num?)?.toInt();
       if (localId != null) {
+        final serverCorralUuid = responseData['corral_id']?.toString();
         animalUuidMap[localId] = serverUuid;
         PorcinoModel.registerUuids(
           id: localId,
           uuid: serverUuid,
-          corralUuid: responseData['corral_id']?.toString(),
+          corralUuid: serverCorralUuid,
+        );
+        await _persistCreatedUuidInCache(
+          localAnimalId: localId,
+          serverUuid: serverUuid,
+          corralUuid: serverCorralUuid,
         );
       }
     }
@@ -125,7 +188,7 @@ class SyncRepositoryImpl implements SyncRepository {
     try {
       final respData = await remoteDataSource.sendSingleItem(item);
       if (corralUuidMap != null && animalUuidMap != null) {
-        _captureCreatedUuids(item, respData, corralUuidMap, animalUuidMap);
+        await _captureCreatedUuids(item, respData, corralUuidMap, animalUuidMap);
       }
       if (itemId.isNotEmpty) {
         await cacheService.updateSyncItem(
@@ -196,8 +259,9 @@ class SyncRepositoryImpl implements SyncRepository {
         .toList();
     if (pendingFifo.isEmpty) return const Right(0);
 
-    final corralUuidMap = <int, String>{};
-    final animalUuidMap = <int, String>{};
+    _hydrateUuidRegistriesFromCache();
+    final corralUuidMap = Map<int, String>.from(LoteModel.uuidRegistrySnapshot);
+    final animalUuidMap = Map<int, String>.from(PorcinoModel.uuidRegistrySnapshot);
     int totalProcessed = 0;
 
     for (final rawItem in pendingFifo) {
@@ -241,8 +305,22 @@ class SyncRepositoryImpl implements SyncRepository {
     if (match == null) {
       return const Left(NotFoundFailure('El evento ya no está en la cola local.'));
     }
+    _hydrateUuidRegistriesFromCache();
+    final corralUuidMap = Map<int, String>.from(LoteModel.uuidRegistrySnapshot);
+    final animalUuidMap = Map<int, String>.from(PorcinoModel.uuidRegistrySnapshot);
+    final resolvedMatch = _resolvePendingRefs(match, corralUuidMap, animalUuidMap);
+    if (!identical(resolvedMatch, match)) {
+      await cacheService.updateSyncItem(
+        id,
+        payloadOverride: resolvedMatch['payload'] as Map<String, dynamic>?,
+      );
+    }
     await cacheService.markSyncItemForRetry(id);
-    final ok = await _dispatchSingleRawItem(match);
+    final ok = await _dispatchSingleRawItem(
+      resolvedMatch,
+      corralUuidMap: corralUuidMap,
+      animalUuidMap: animalUuidMap,
+    );
     if (ok) return const Right(true);
 
     final updated = cacheService.getOfflineQueue().cast<Map<String, dynamic>?>().firstWhere(

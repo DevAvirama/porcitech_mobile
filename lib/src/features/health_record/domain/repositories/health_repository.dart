@@ -22,7 +22,7 @@ abstract class HealthRepository {
 
   Future<Either<Failure, List<HealthEventEntity>>> getTratamientos({String? animalUuid});
   Future<Either<Failure, List<WithdrawalAlertItem>>> getAlertasRetiro();
-  Future<Either<Failure, List<BiosecurityProtocolItem>>> getProtocolosBioseguridad();
+  Future<Either<Failure, List<BiosecurityProtocolItem>>> getProtocolosBioseguridad({String? corralId});
   Future<Either<Failure, bool>> toggleProtocoloBioseguridad({
     required String protocoloId,
     required bool cumplido,

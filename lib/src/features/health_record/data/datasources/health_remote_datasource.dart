@@ -24,7 +24,7 @@ abstract class HealthRemoteDataSource {
 
   Future<List<HealthEventEntity>> getTratamientos({String? animalUuid});
   Future<List<WithdrawalAlertItem>> getAlertasRetiro();
-  Future<List<BiosecurityProtocolItem>> getProtocolosBioseguridad();
+  Future<List<BiosecurityProtocolItem>> getProtocolosBioseguridad({String? corralId});
   Future<bool> toggleProtocoloBioseguridad({
     required String protocoloId,
     required bool cumplido,
@@ -205,19 +205,26 @@ class HealthRemoteDataSourceImpl implements HealthRemoteDataSource {
   }
 
   @override
-  Future<List<BiosecurityProtocolItem>> getProtocolosBioseguridad() async {
+  Future<List<BiosecurityProtocolItem>> getProtocolosBioseguridad({String? corralId}) async {
     try {
       final protoRes = await _client.get(
         ApiConstants.bioseguridadProtocolos,
         queryParameters: const {'activo': 'true'},
       );
+      final targetCorral = (corralId ?? '').trim();
       final Map<String, Map<String, dynamic>> execMap = {};
       try {
-        final execRes = await _client.get(ApiConstants.bioseguridadEjecuciones);
+        final execRes = await _client.get(
+          ApiConstants.bioseguridadEjecuciones,
+          queryParameters: targetCorral.isNotEmpty ? {'corral_id': targetCorral} : null,
+        );
         if (execRes.data is List) {
           for (final e in (execRes.data as List)) {
             if (e is Map<String, dynamic> && e['protocolo_id'] != null) {
-              execMap[e['protocolo_id'].toString()] = e;
+              final execCorral = (e['corral_id']?.toString() ?? '').trim();
+              if (execCorral == targetCorral) {
+                execMap[e['protocolo_id'].toString()] = e;
+              }
             }
           }
         }

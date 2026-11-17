@@ -194,12 +194,14 @@ class HealthRepositoryImpl implements HealthRepository {
   }
 
   @override
-  Future<Either<Failure, List<BiosecurityProtocolItem>>> getProtocolosBioseguridad() async {
+  Future<Either<Failure, List<BiosecurityProtocolItem>>> getProtocolosBioseguridad({
+    String? corralId,
+  }) async {
     if (cacheService.isOfflineModeEnabled()) {
       return Right(_getCachedProtocolos());
     }
     try {
-      final list = await remoteDataSource.getProtocolosBioseguridad();
+      final list = await remoteDataSource.getProtocolosBioseguridad(corralId: corralId);
       if (list.isNotEmpty) {
         final raw = list
             .map(

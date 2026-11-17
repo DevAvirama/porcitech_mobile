@@ -5,6 +5,9 @@ class LoteModel extends LoteEntity {
 
   static String? resolveUuid(int id) => _uuidRegistry[id];
 
+  static Map<int, String> get uuidRegistrySnapshot =>
+      Map<int, String>.unmodifiable(_uuidRegistry);
+
   static void registerUuid(int id, String? uuid) {
     if (uuid != null && uuid.isNotEmpty) {
       _uuidRegistry[id] = uuid;
