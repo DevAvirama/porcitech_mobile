@@ -317,6 +317,8 @@ class _RegistroDePartoCerdaH104State
   Widget _buildPartosTab(ReproductionState state) {
     final bool cumpleMetaPorkcolombia =
         _nacidosVivos >= ZootechnicalConstants.metaNacidosVivos;
+    final double viabilidadPct =
+        _totalNacidos > 0 ? (_nacidosVivos / _totalNacidos) * 100.0 : 0.0;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -339,10 +341,14 @@ class _RegistroDePartoCerdaH104State
               children: [
                 _buildSummaryItem('Total Nacidos', '$_totalNacidos'),
                 _buildSummaryItem(
-                  'Promedio/Lechón',
+                  'Viabilidad',
+                  '${viabilidadPct.toStringAsFixed(0)}%',
+                ),
+                _buildSummaryItem(
+                  'Prom./Lechón',
                   '${_pesoPromedioLechon.toStringAsFixed(2)} kg',
                 ),
-                _buildSummaryItem('Meta Estándar', '≥12 vivos'),
+                _buildSummaryItem('Meta', '≥12 vivos'),
               ],
             ),
           ),

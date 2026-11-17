@@ -88,6 +88,7 @@ class FeedingNotifier extends Notifier<FeedingState> {
       try {
         final invRes = await _client.get(ApiConstants.inventarioItems);
         if (invRes.data is List) {
+          await _cache.cacheJson(_cache.keyCachedInventory, invRes.data);
           insumosList = (invRes.data as List)
               .whereType<Map<String, dynamic>>()
               .map(
@@ -110,6 +111,32 @@ class FeedingNotifier extends Notifier<FeedingState> {
               .toList();
         }
       } catch (_) {}
+    }
+
+    if (insumosList.isEmpty) {
+      final cachedInv = _cache.getCachedJson(_cache.keyCachedInventory);
+      if (cachedInv is List && cachedInv.isNotEmpty) {
+        insumosList = cachedInv
+            .whereType<Map<String, dynamic>>()
+            .map(
+              (m) => InventoryItemEntity(
+                id: m['id']?.toString() ?? '',
+                categoriaCodigo: m['categoria_codigo']?.toString() ?? 'INS',
+                categoriaNombre:
+                    m['categoria_nombre']?.toString() ?? 'Insumo',
+                codigoSku: m['codigo_sku']?.toString() ?? 'SKU-01',
+                nombre: m['nombre']?.toString() ?? 'Insumo',
+                unidadMedida: m['unidad_medida']?.toString() ?? 'kg',
+                stockActual: (m['stock_actual'] as num?)?.toDouble() ?? 0.0,
+                stockMinimo: (m['stock_minimo'] as num?)?.toDouble() ?? 0.0,
+                costoUnitario:
+                    (m['costo_unitario'] as num?)?.toDouble() ?? 0.0,
+                ubicacionBodega:
+                    m['ubicacion_bodega']?.toString() ?? 'Bodega Principal',
+              ),
+            )
+            .toList();
+      }
     }
 
     if (insumosList.isEmpty) {

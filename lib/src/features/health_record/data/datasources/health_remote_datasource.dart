@@ -28,6 +28,7 @@ abstract class HealthRemoteDataSource {
   Future<bool> toggleProtocoloBioseguridad({
     required String protocoloId,
     required bool cumplido,
+    String? corralId,
     String? observaciones,
   });
 }
@@ -250,6 +251,7 @@ class HealthRemoteDataSourceImpl implements HealthRemoteDataSource {
   Future<bool> toggleProtocoloBioseguridad({
     required String protocoloId,
     required bool cumplido,
+    String? corralId,
     String? observaciones,
   }) async {
     try {
@@ -257,14 +259,18 @@ class HealthRemoteDataSourceImpl implements HealthRemoteDataSource {
         ApiConstants.bioseguridadEjecuciones,
         data: {
           'protocolo_id': protocoloId,
+          if (corralId != null && corralId.trim().isNotEmpty)
+            'corral_id': corralId.trim(),
           'cumplido': cumplido,
           if (observaciones != null && observaciones.trim().isNotEmpty)
             'observaciones': observaciones.trim(),
         },
       );
       return true;
-    } catch (_) {
-      return false;
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      throw ServerException(e.toString());
     }
   }
 }

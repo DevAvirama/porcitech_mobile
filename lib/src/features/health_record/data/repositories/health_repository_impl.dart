@@ -134,27 +134,126 @@ class HealthRepositoryImpl implements HealthRepository {
   @override
   Future<Either<Failure, List<WithdrawalAlertItem>>> getAlertasRetiro() async {
     if (cacheService.isOfflineModeEnabled()) {
-      return const Right([]);
+      return Right(_getCachedWithdrawals());
     }
     try {
       final list = await remoteDataSource.getAlertasRetiro();
+      if (list.isNotEmpty) {
+        final raw = list
+            .map(
+              (a) => {
+                'animal_id': a.animalUuid,
+                'animal_arete': a.animalArete,
+                'corral_codigo': a.corralCodigo,
+                'producto_nombre': a.productoNombre,
+                'fecha_tratamiento': a.fechaTratamiento.toIso8601String(),
+                'tiempo_retiro_dias': a.tiempoRetiroDias,
+                'fecha_fin_retiro': a.fechaFinRetiro.toIso8601String(),
+                'dias_restantes': a.diasRestantes,
+              },
+            )
+            .toList();
+        await cacheService.cacheJson(cacheService.keyCachedWithdrawals, raw);
+      }
       return Right(list);
     } catch (e) {
-      return const Right([]);
+      return Right(_getCachedWithdrawals());
     }
+  }
+
+  List<WithdrawalAlertItem> _getCachedWithdrawals() {
+    final cached = cacheService.getCachedJson(cacheService.keyCachedWithdrawals);
+    if (cached is List && cached.isNotEmpty) {
+      return cached.whereType<Map<String, dynamic>>().map((m) {
+        final fechaTrat =
+            DateTime.tryParse(m['fecha_tratamiento']?.toString() ?? '') ??
+                DateTime.now();
+        final fechaFin =
+            DateTime.tryParse(m['fecha_fin_retiro']?.toString() ?? '') ??
+                DateTime.now();
+        final remaining = fechaFin.difference(DateTime.now()).inDays;
+        return WithdrawalAlertItem(
+          animalUuid: m['animal_id']?.toString() ?? '',
+          animalArete: m['animal_arete']?.toString() ?? 'POR',
+          corralCodigo: m['corral_codigo']?.toString(),
+          productoNombre: m['producto_nombre']?.toString() ?? '',
+          fechaTratamiento: fechaTrat,
+          tiempoRetiroDias: (m['tiempo_retiro_dias'] as num?)?.toInt() ?? 0,
+          fechaFinRetiro: fechaFin,
+          diasRestantes: remaining >= 0
+              ? remaining
+              : ((m['dias_restantes'] as num?)?.toInt() ?? 0),
+        );
+      }).toList();
+    }
+    return const [];
   }
 
   @override
   Future<Either<Failure, List<BiosecurityProtocolItem>>> getProtocolosBioseguridad() async {
     if (cacheService.isOfflineModeEnabled()) {
-      return Right(_seedProtocolos());
+      return Right(_getCachedOrSeedProtocolos());
     }
     try {
       final list = await remoteDataSource.getProtocolosBioseguridad();
-      if (list.isNotEmpty) return Right(list);
-      return Right(_seedProtocolos());
+      if (list.isNotEmpty) {
+        final raw = list
+            .map(
+              (p) => {
+                'id': p.id,
+                'codigo': p.codigo,
+                'tipo_protocolo': p.tipoProtocolo,
+                'tarea': p.tarea,
+                'descripcion': p.descripcion,
+                'frecuencia': p.frecuencia,
+                'cumplido_hoy': p.cumplidoHoy,
+                'observaciones_hoy': p.observacionesHoy,
+              },
+            )
+            .toList();
+        await cacheService.cacheJson(cacheService.keyCachedProtocols, raw);
+        return Right(list);
+      }
+      return Right(_getCachedOrSeedProtocolos());
     } catch (e) {
-      return Right(_seedProtocolos());
+      return Right(_getCachedOrSeedProtocolos());
+    }
+  }
+
+  List<BiosecurityProtocolItem> _getCachedOrSeedProtocolos() {
+    final cached = cacheService.getCachedJson(cacheService.keyCachedProtocols);
+    if (cached is List && cached.isNotEmpty) {
+      return cached
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (p) => BiosecurityProtocolItem(
+              id: p['id']?.toString() ?? '',
+              codigo: p['codigo']?.toString() ?? 'BIO',
+              tipoProtocolo: p['tipo_protocolo']?.toString() ?? 'operacional',
+              tarea: p['tarea']?.toString() ?? '',
+              descripcion: p['descripcion']?.toString() ?? '',
+              frecuencia: p['frecuencia']?.toString() ?? 'Diaria',
+              cumplidoHoy: p['cumplido_hoy'] == true,
+              observacionesHoy: p['observaciones_hoy']?.toString(),
+            ),
+          )
+          .toList();
+    }
+    return _seedProtocolos();
+  }
+
+  Future<void> _updateCachedProtocolStatus(String protocoloId, bool cumplido) async {
+    final cached = cacheService.getCachedJson(cacheService.keyCachedProtocols);
+    if (cached is List && cached.isNotEmpty) {
+      final updated = cached.whereType<Map<String, dynamic>>().map((p) {
+        if (p['id']?.toString() == protocoloId) {
+          final copy = Map<String, dynamic>.from(p);
+          copy['cumplido_hoy'] = cumplido;
+          return copy;
+        }
+        return p;
+      }).toList();
+      await cacheService.cacheJson(cacheService.keyCachedProtocols, updated);
     }
   }
 
@@ -162,18 +261,25 @@ class HealthRepositoryImpl implements HealthRepository {
   Future<Either<Failure, bool>> toggleProtocoloBioseguridad({
     required String protocoloId,
     required bool cumplido,
+    String? corralId,
     String? observaciones,
   }) async {
+    final payload = <String, dynamic>{
+      'protocolo_id': protocoloId,
+      if (corralId != null && corralId.trim().isNotEmpty)
+        'corral_id': corralId.trim(),
+      'cumplido': cumplido,
+      if (observaciones != null && observaciones.trim().isNotEmpty)
+        'observaciones': observaciones.trim(),
+    };
+
+    await _updateCachedProtocolStatus(protocoloId, cumplido);
+
     if (cacheService.isOfflineModeEnabled()) {
       await cacheService.enqueueSyncItem(
         endpoint: ApiConstants.bioseguridadEjecuciones,
         method: 'POST',
-        payload: {
-          'protocolo_id': protocoloId,
-          'cumplido': cumplido,
-          if (observaciones != null && observaciones.isNotEmpty)
-            'observaciones': observaciones,
-        },
+        payload: payload,
         description: 'Bioseguridad protocolo ${cumplido ? "cumplido" : "pendiente"}',
       );
       return const Right(true);
@@ -183,10 +289,17 @@ class HealthRepositoryImpl implements HealthRepository {
       final ok = await remoteDataSource.toggleProtocoloBioseguridad(
         protocoloId: protocoloId,
         cumplido: cumplido,
+        corralId: corralId,
         observaciones: observaciones,
       );
       return Right(ok);
     } catch (e) {
+      await cacheService.enqueueSyncItem(
+        endpoint: ApiConstants.bioseguridadEjecuciones,
+        method: 'POST',
+        payload: payload,
+        description: 'Bioseguridad protocolo ${cumplido ? "cumplido" : "pendiente"}',
+      );
       return const Right(true);
     }
   }

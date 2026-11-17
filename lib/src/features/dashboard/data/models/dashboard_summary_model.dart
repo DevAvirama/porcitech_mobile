@@ -40,6 +40,22 @@ class DashboardSummaryModel extends DashboardSummaryEntity {
     final int gestacionCount = ((dist['gestacion'] as num?)?.toInt() ?? 0) +
         ((dist['maternidad'] as num?)?.toInt() ?? 0);
 
+    List<DashboardAlertEntity> parsedAlertas = alertas;
+    if (parsedAlertas.isEmpty && json['alertas'] is List) {
+      parsedAlertas = (json['alertas'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (a) => DashboardAlertEntity(
+              id: a['id']?.toString() ?? '',
+              nivel: a['nivel']?.toString() ?? 'info',
+              modulo: a['modulo']?.toString() ?? 'manejo',
+              mensaje: a['mensaje']?.toString() ?? '',
+              accionSugerida: a['accion_sugerida']?.toString() ?? '',
+            ),
+          )
+          .toList();
+    }
+
     return DashboardSummaryModel(
       totalPorcinos: (json['total_animales'] as num?)?.toInt() ??
           (json['total_porcinos'] as num?)?.toInt() ??
@@ -63,7 +79,7 @@ class DashboardSummaryModel extends DashboardSummaryEntity {
           0,
       gdpPromedioGramoDia: gdpGramoDia,
       registrosPendientesSync: pendingSync,
-      alertas: alertas,
+      alertas: parsedAlertas,
       actividadReciente: actividadReciente,
     );
   }
@@ -81,6 +97,17 @@ class DashboardSummaryModel extends DashboardSummaryEntity {
       'hembras_gestacion': hembrasGestacion,
       'partos_mes': partosMes,
       'gdp_promedio': gdpPromedioGramoDia,
+      'alertas': alertas
+          .map(
+            (a) => {
+              'id': a.id,
+              'nivel': a.nivel,
+              'modulo': a.modulo,
+              'mensaje': a.mensaje,
+              'accion_sugerida': a.accionSugerida,
+            },
+          )
+          .toList(),
     };
   }
 }

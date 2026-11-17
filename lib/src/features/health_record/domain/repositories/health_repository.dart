@@ -26,6 +26,7 @@ abstract class HealthRepository {
   Future<Either<Failure, bool>> toggleProtocoloBioseguridad({
     required String protocoloId,
     required bool cumplido,
+    String? corralId,
     String? observaciones,
   });
 }

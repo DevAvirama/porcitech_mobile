@@ -38,6 +38,7 @@ class ApiConstants {
   // --- Endpoints de Pesaje y Visión Artificial ---
   static const String pesos = '/pesajes/manual';
   static const String iaEstimarPeso = '/pesajes/vision';
+  static const String calibracionEstado = '/pesajes/calibracion';
   static const String camaraRtsp = '/pesajes/camara-rtsp';
   static const String capturarEnVivo = '/pesajes/capturar-en-vivo';
   static String pesajesPorAnimal(dynamic id) => '/pesajes/animal/$id';
@@ -49,6 +50,7 @@ class ApiConstants {
   // --- Endpoints de Inventario y Bodega ---
   static const String inventarioCategorias = '/inventario/categorias';
   static const String inventarioItems = '/inventario/items';
+  static const String alertasVencimientoLotes = '/inventario/lotes/alertas-vencimiento';
   static const String inventarioDescuento = '/inventario/movimientos';
 
   // --- Endpoints de Sanidad, Retiros y Bioseguridad ---

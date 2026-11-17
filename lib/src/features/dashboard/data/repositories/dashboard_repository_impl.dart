@@ -18,7 +18,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
 
   @override
   Future<Either<Failure, DashboardSummaryEntity>> getSummary() async {
-    final pendingCount = cacheService.getOfflineQueue().length;
+    final pendingCount = cacheService.getPendingSyncCount();
 
     if (cacheService.isOfflineModeEnabled()) {
       final cachedJson = cacheService.getCachedJson(cacheService.keyCachedDashboard);

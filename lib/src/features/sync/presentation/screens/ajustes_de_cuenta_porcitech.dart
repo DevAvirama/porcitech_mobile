@@ -6,12 +6,13 @@ import 'package:porcitech_mobile/src/core/di/core_providers.dart';
 import 'package:porcitech_mobile/src/core/theme/app_colors.dart';
 import 'package:porcitech_mobile/src/core/widgets/brand_mark.dart';
 import 'package:porcitech_mobile/src/core/widgets/tactile_button.dart';
+import 'package:porcitech_mobile/src/features/animals/presentation/controllers/animals_controller.dart';
 import 'package:porcitech_mobile/src/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:porcitech_mobile/src/features/dashboard/presentation/controllers/dashboard_controller.dart';
+import 'package:porcitech_mobile/src/features/sync/domain/entities/sync_item_entity.dart';
 import 'package:porcitech_mobile/src/features/sync/presentation/controllers/sync_controller.dart';
 
-/// Pantalla: Ajustes de Cuenta y Sincronización (`ajustes_de_cuenta_porcitech`).
-/// Perfil del operario, interruptores de Modo Offline y Notificaciones,
-/// estado del servidor FastAPI y gestión visual de la cola offline.
+/// Pantalla: Ajustes de Cuenta, Descarga Offline (HU34) y Monitor de Sincronización (HU33).
 class AjustesDeCuentaPorcitech extends ConsumerStatefulWidget {
   final VoidCallback onLogout;
 
@@ -35,6 +36,10 @@ class _AjustesDeCuentaPorcitechState
     final isOffline = ref.watch(offlineModeProvider);
     final authState = ref.watch(authNotifierProvider);
     final profile = syncState.userProfile;
+
+    final lastSyncText = syncState.lastCatalogSyncAt != null
+        ? DateFormat('dd/MM/yyyy HH:mm').format(syncState.lastCatalogSyncAt!)
+        : 'Sin descarga previa';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -74,7 +79,7 @@ class _AjustesDeCuentaPorcitechState
                     child: Text(
                       (authState.user?.name.isNotEmpty == true)
                           ? authState.user!.name.substring(0, 1).toUpperCase()
-                          : 'S',
+                          : 'P',
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
@@ -90,7 +95,7 @@ class _AjustesDeCuentaPorcitechState
                         Text(
                           profile?['name']?.toString() ??
                               authState.user?.name ??
-                              'Santiago Avirama',
+                              'Operario PorciTech',
                           style: const TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
@@ -101,7 +106,7 @@ class _AjustesDeCuentaPorcitechState
                         Text(
                           profile?['role']?.toString() ??
                               authState.user?.role ??
-                              'Zootecnista / Mobile Tech Lead',
+                              'Operario de Galpón',
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -112,7 +117,7 @@ class _AjustesDeCuentaPorcitechState
                         Text(
                           profile?['granja']?.toString() ??
                               authState.user?.granja ??
-                              'Granja San Jerónimo • Galpón 4',
+                              'Unidad Porcina SENA',
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.slateMuted,
@@ -126,9 +131,9 @@ class _AjustesDeCuentaPorcitechState
             ),
             const SizedBox(height: 20),
 
-            // --- Estado de Conexión con el Servidor FastAPI ---
+            // --- Descarga de Datos para Galpón Sin Conexión (HU34) ---
             const Text(
-              'Estado de Conectividad con Servidor',
+              'Datos Locales para Trabajo Sin Red (HU34)',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -140,54 +145,76 @@ class _AjustesDeCuentaPorcitechState
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isOffline ? AppColors.warningOrange : AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          isOffline
-                              ? 'Modo Offline Forzado Activado'
-                              : 'Conectado a FastAPI REST (HTTP/HTTPS)',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.slateDark,
-                          ),
+                  Row(
+                    children: [
+                      const Icon(Icons.download_for_offline_rounded,
+                          color: AppColors.senaBlue, size: 26),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Catálogo de Granja en Dispositivo',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.slateDark,
+                              ),
+                            ),
+                            Text(
+                              'Última actualización: $lastSyncText',
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                color: AppColors.slateMuted,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          isOffline
-                              ? 'Las transacciones se guardan en la cola local'
-                              : 'Endpoint activo: ${ApiConstants.defaultBaseUrl}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.slateMuted,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 12),
+                  TactileButton(
+                    text: 'Descargar Animales, Corrales e Inventario',
+                    icon: Icons.cloud_download_rounded,
+                    type: TactileButtonType.secondary,
+                    isLoading: syncState.isDownloadingCatalog,
+                    onPressed: isOffline
+                        ? null
+                        : () async {
+                            final ok = await ref
+                                .read(syncNotifierProvider.notifier)
+                                .downloadOfflineCatalog();
+                            if (ok) {
+                              ref.read(animalsNotifierProvider.notifier).fetchPorcinos();
+                              ref.read(dashboardNotifierProvider.notifier).loadSummary();
+                            }
+                          },
+                  ),
+                  if (isOffline)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6),
+                      child: Text(
+                        'Desactive el Modo Offline para descargar la última copia desde Wi-Fi.',
+                        style: TextStyle(fontSize: 11, color: AppColors.warningOrange),
+                      ),
+                    ),
                 ],
               ),
             ),
             const SizedBox(height: 20),
 
-            // --- Switches de Configuración de Campo ---
+            // --- Estado de Conexión y Switches ---
             const Text(
-              'Configuración de Operación',
+              'Conectividad y Operación en Galpón',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -203,6 +230,49 @@ class _AjustesDeCuentaPorcitechState
               ),
               child: Column(
                 children: [
+                  Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isOffline ? AppColors.warningOrange : AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isOffline
+                                    ? 'Modo Offline Forzado Activado'
+                                    : 'Conectado a FastAPI REST',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.slateDark,
+                                ),
+                              ),
+                              Text(
+                                isOffline
+                                    ? 'Escritura local FIFO con UUID v4'
+                                    : 'Endpoint activo: ${ApiConstants.defaultBaseUrl}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.slateMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
                   SwitchListTile.adaptive(
                     value: isOffline,
                     activeTrackColor: AppColors.warningOrange,
@@ -214,7 +284,10 @@ class _AjustesDeCuentaPorcitechState
                       'Forzar trabajo sin internet (evita timeouts en galpón)',
                       style: TextStyle(fontSize: 12, color: AppColors.slateMuted),
                     ),
-                    secondary: const Icon(Icons.signal_wifi_off_rounded, color: AppColors.warningOrange),
+                    secondary: const Icon(
+                      Icons.signal_wifi_off_rounded,
+                      color: AppColors.warningOrange,
+                    ),
                     onChanged: (val) {
                       ref.read(offlineModeProvider.notifier).toggleOffline(val);
                     },
@@ -228,10 +301,13 @@ class _AjustesDeCuentaPorcitechState
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                     ),
                     subtitle: const Text(
-                      'Alertas de fin de retiro farmacológico y pesajes atrasados',
+                      'Alertas de fin de retiro farmacológico y partos próximos',
                       style: TextStyle(fontSize: 12, color: AppColors.slateMuted),
                     ),
-                    secondary: const Icon(Icons.notifications_active_outlined, color: AppColors.primary),
+                    secondary: const Icon(
+                      Icons.notifications_active_outlined,
+                      color: AppColors.primary,
+                    ),
                     onChanged: (val) {
                       setState(() => _pushNotifications = val);
                     },
@@ -241,52 +317,82 @@ class _AjustesDeCuentaPorcitechState
             ),
             const SizedBox(height: 20),
 
-            // --- Cola de Sincronización Offline (`offline-queue`) ---
+            // --- Monitor de Sincronización Outbox FIFO (HU32 + HU33) ---
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Cola de Sincronización Offline',
+                  'Monitor de Sincronización (HU33)',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.slateHeading,
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: syncState.queueItems.isNotEmpty ? AppColors.warningLight : AppColors.mintSoft,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${syncState.queueItems.length} pendientes',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: syncState.queueItems.isNotEmpty ? AppColors.warningOrange : AppColors.primaryDark,
+                if (syncState.sentCount > 0)
+                  TextButton(
+                    onPressed: () {
+                      ref.read(syncNotifierProvider.notifier).clearSentItems();
+                    },
+                    child: const Text(
+                      'Limpiar enviados',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                     ),
                   ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Resumen de estados: Pendientes / Enviados / Errores / Conflictos
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildStatusPill(
+                  label: 'Pendientes',
+                  count: syncState.pendingCount,
+                  bg: AppColors.warningLight,
+                  fg: AppColors.warningOrange,
+                ),
+                _buildStatusPill(
+                  label: 'Enviados',
+                  count: syncState.sentCount,
+                  bg: AppColors.mintSoft,
+                  fg: AppColors.primaryDark,
+                ),
+                _buildStatusPill(
+                  label: 'Errores',
+                  count: syncState.errorCount,
+                  bg: const Color(0xFFFEF3C7),
+                  fg: const Color(0xFFB45309),
+                ),
+                _buildStatusPill(
+                  label: 'Conflictos',
+                  count: syncState.conflictCount,
+                  bg: AppColors.alertRedLight,
+                  fg: AppColors.alertRedDark,
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
 
             if (syncState.message != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: AppColors.mintSoft,
+                  color: syncState.isError ? AppColors.alertRedLight : AppColors.mintSoft,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.mintBorder),
+                  border: Border.all(
+                    color: syncState.isError ? AppColors.alertRedBorder : AppColors.mintBorder,
+                  ),
                 ),
                 child: Text(
                   syncState.message!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primaryDark,
+                    color: syncState.isError ? AppColors.alertRedDark : AppColors.primaryDark,
                   ),
                 ),
               ),
@@ -301,8 +407,8 @@ class _AjustesDeCuentaPorcitechState
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 alignment: Alignment.center,
-                child: Column(
-                  children: const [
+                child: const Column(
+                  children: [
                     Icon(Icons.cloud_done_rounded, color: AppColors.primary, size: 36),
                     SizedBox(height: 8),
                     Text(
@@ -321,50 +427,18 @@ class _AjustesDeCuentaPorcitechState
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
                   final item = syncState.queueItems[index];
-                  return Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.history, color: AppColors.warningOrange),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.description,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.slateDark,
-                                ),
-                              ),
-                              Text(
-                                '${item.method} ${item.endpoint} • ${DateFormat('HH:mm:ss').format(item.createdAt)}',
-                                style: const TextStyle(fontSize: 11, color: AppColors.slateMuted),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
+                  return _buildQueueItemCard(item, syncState.isSyncing);
                 },
               ),
             ],
             const SizedBox(height: 14),
 
-            // Botón Sincronizar Cola
+            // Botón Sincronizar Cola FIFO
             TactileButton(
               text: 'Sincronizar Registros Pendientes',
               icon: Icons.sync_rounded,
               isLoading: syncState.isSyncing,
-              onPressed: syncState.queueItems.isEmpty
+              onPressed: syncState.totalUnsentCount == 0
                   ? null
                   : () {
                       ref.read(syncNotifierProvider.notifier).executeSync();
@@ -385,6 +459,177 @@ class _AjustesDeCuentaPorcitechState
             const SizedBox(height: 20),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusPill({
+    required String label,
+    required int count,
+    required Color bg,
+    required Color fg,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        '$label: $count',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          color: fg,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQueueItemCard(SyncItemEntity item, bool isSyncing) {
+    final Color statusColor;
+    final Color statusBg;
+    final IconData statusIcon;
+    final String statusLabel;
+
+    switch (item.status) {
+      case SyncItemStatus.enviado:
+        statusColor = AppColors.primaryDark;
+        statusBg = AppColors.mintSoft;
+        statusIcon = Icons.check_circle_rounded;
+        statusLabel = 'ENVIADO';
+        break;
+      case SyncItemStatus.conflicto:
+        statusColor = AppColors.alertRedDark;
+        statusBg = AppColors.alertRedLight;
+        statusIcon = Icons.error_outline_rounded;
+        statusLabel = 'CONFLICTO';
+        break;
+      case SyncItemStatus.error:
+        statusColor = const Color(0xFFB45309);
+        statusBg = const Color(0xFFFEF3C7);
+        statusIcon = Icons.warning_amber_rounded;
+        statusLabel = 'ERROR RED';
+        break;
+      case SyncItemStatus.pendiente:
+        statusColor = AppColors.warningOrange;
+        statusBg = AppColors.warningLight;
+        statusIcon = Icons.schedule_rounded;
+        statusLabel = 'PENDIENTE';
+        break;
+    }
+
+    final shortUuid = item.idLocal.length >= 8 ? item.idLocal.substring(0, 8) : item.idLocal;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: item.status == SyncItemStatus.conflicto
+              ? AppColors.alertRedBorder
+              : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(statusIcon, color: statusColor, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.description,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.slateDark,
+                      ),
+                    ),
+                    Text(
+                      '${item.method} ${item.endpoint} • UUID $shortUuid • ${DateFormat('HH:mm:ss').format(item.createdAt)}',
+                      style: const TextStyle(fontSize: 11, color: AppColors.slateMuted),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: statusBg,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (item.errorMessage != null && item.errorMessage!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: statusBg,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                item.errorMessage!,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: statusColor,
+                ),
+              ),
+            ),
+          ],
+          if (item.status == SyncItemStatus.error ||
+              item.status == SyncItemStatus.conflicto) ...[
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: isSyncing
+                      ? null
+                      : () {
+                          ref.read(syncNotifierProvider.notifier).retryItem(item.id);
+                        },
+                  icon: const Icon(Icons.refresh_rounded, size: 16),
+                  label: const Text('Reintentar', style: TextStyle(fontSize: 12)),
+                ),
+                const SizedBox(width: 6),
+                TextButton.icon(
+                  onPressed: isSyncing
+                      ? null
+                      : () {
+                          ref.read(syncNotifierProvider.notifier).removeItem(item.id);
+                        },
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    size: 16,
+                    color: AppColors.alertRedDark,
+                  ),
+                  label: const Text(
+                    'Descartar',
+                    style: TextStyle(fontSize: 12, color: AppColors.alertRedDark),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }

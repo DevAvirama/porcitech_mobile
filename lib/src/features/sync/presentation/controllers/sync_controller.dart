@@ -18,27 +18,51 @@ final syncRepositoryProvider = Provider<SyncRepository>((ref) {
 
 class SyncState {
   final bool isSyncing;
+  final bool isDownloadingCatalog;
   final List<SyncItemEntity> queueItems;
   final String? message;
+  final bool isError;
+  final DateTime? lastCatalogSyncAt;
   final Map<String, dynamic>? userProfile;
 
   const SyncState({
     this.isSyncing = false,
+    this.isDownloadingCatalog = false,
     this.queueItems = const [],
     this.message,
+    this.isError = false,
+    this.lastCatalogSyncAt,
     this.userProfile,
   });
 
+  int get pendingCount =>
+      queueItems.where((i) => i.status == SyncItemStatus.pendiente).length;
+  int get sentCount =>
+      queueItems.where((i) => i.status == SyncItemStatus.enviado).length;
+  int get errorCount =>
+      queueItems.where((i) => i.status == SyncItemStatus.error).length;
+  int get conflictCount =>
+      queueItems.where((i) => i.status == SyncItemStatus.conflicto).length;
+  int get totalUnsentCount =>
+      queueItems.where((i) => i.status != SyncItemStatus.enviado).length;
+
   SyncState copyWith({
     bool? isSyncing,
+    bool? isDownloadingCatalog,
     List<SyncItemEntity>? queueItems,
     String? message,
+    bool clearMessage = false,
+    bool? isError,
+    DateTime? lastCatalogSyncAt,
     Map<String, dynamic>? userProfile,
   }) {
     return SyncState(
       isSyncing: isSyncing ?? this.isSyncing,
+      isDownloadingCatalog: isDownloadingCatalog ?? this.isDownloadingCatalog,
       queueItems: queueItems ?? this.queueItems,
-      message: message,
+      message: clearMessage ? null : (message ?? this.message),
+      isError: isError ?? this.isError,
+      lastCatalogSyncAt: lastCatalogSyncAt ?? this.lastCatalogSyncAt,
       userProfile: userProfile ?? this.userProfile,
     );
   }
@@ -47,18 +71,36 @@ class SyncState {
 class SyncNotifier extends Notifier<SyncState> {
   @override
   SyncState build() {
+    // Auto-sincronización FIFO al recuperar conectividad (HU32)
+    ref.listen<AsyncValue<bool>>(connectivityStreamProvider, (prev, next) {
+      final isOnline = next.asData?.value ?? false;
+      final wasOnline = prev?.asData?.value ?? false;
+      final offlineForced = ref.read(offlineModeProvider);
+      if (isOnline && !wasOnline && !offlineForced && !state.isSyncing) {
+        if (state.totalUnsentCount > 0) {
+          executeSync();
+        }
+      }
+    });
+
     Future.microtask(() {
       refreshQueue();
       loadProfile();
     });
-    return const SyncState();
+
+    return SyncState(
+      lastCatalogSyncAt: ref.read(syncRepositoryProvider).getLastCatalogSyncAt(),
+    );
   }
 
   SyncRepository get _repository => ref.read(syncRepositoryProvider);
 
   void refreshQueue() {
     final list = _repository.getPendingQueue();
-    state = state.copyWith(queueItems: list);
+    state = state.copyWith(
+      queueItems: list,
+      lastCatalogSyncAt: _repository.getLastCatalogSyncAt(),
+    );
   }
 
   Future<void> loadProfile() async {
@@ -70,28 +112,98 @@ class SyncNotifier extends Notifier<SyncState> {
   }
 
   Future<bool> executeSync() async {
-    state = state.copyWith(isSyncing: true, message: null);
+    if (state.isSyncing) return false;
+    state = state.copyWith(isSyncing: true, clearMessage: true, isError: false);
     final result = await _repository.syncOfflineQueue();
+    refreshQueue();
 
     return result.fold(
       (failure) {
-        state = state.copyWith(isSyncing: false, message: failure.message);
+        state = state.copyWith(
+          isSyncing: false,
+          message: failure.message,
+          isError: true,
+        );
         return false;
       },
       (count) {
-        refreshQueue();
         state = state.copyWith(
           isSyncing: false,
-          message: '$count registros sincronizados exitosamente con FastAPI.',
+          message: '$count registros sincronizados en orden FIFO con FastAPI.',
+          isError: false,
         );
         return true;
       },
     );
   }
 
+  Future<bool> retryItem(String id) async {
+    state = state.copyWith(isSyncing: true, clearMessage: true, isError: false);
+    final result = await _repository.retrySingleItem(id);
+    refreshQueue();
+
+    return result.fold(
+      (failure) {
+        state = state.copyWith(
+          isSyncing: false,
+          message: failure.message,
+          isError: true,
+        );
+        return false;
+      },
+      (_) {
+        state = state.copyWith(
+          isSyncing: false,
+          message: 'Evento reenviado y confirmado por el servidor.',
+          isError: false,
+        );
+        return true;
+      },
+    );
+  }
+
+  Future<void> removeItem(String id) async {
+    await _repository.removeItem(id);
+    refreshQueue();
+  }
+
+  Future<void> clearSentItems() async {
+    await _repository.clearSentItems();
+    refreshQueue();
+  }
+
   Future<void> clearQueue() async {
     await _repository.clearQueue();
     refreshQueue();
+  }
+
+  Future<bool> downloadOfflineCatalog() async {
+    state = state.copyWith(
+      isDownloadingCatalog: true,
+      clearMessage: true,
+      isError: false,
+    );
+    final result = await _repository.downloadOfflineCatalog();
+
+    return result.fold(
+      (failure) {
+        state = state.copyWith(
+          isDownloadingCatalog: false,
+          message: failure.message,
+          isError: true,
+        );
+        return false;
+      },
+      (syncTime) {
+        state = state.copyWith(
+          isDownloadingCatalog: false,
+          lastCatalogSyncAt: syncTime,
+          message: 'Catálogo completo (animales, corrales, insumos y sanidad) descargado para uso sin red.',
+          isError: false,
+        );
+        return true;
+      },
+    );
   }
 }
 

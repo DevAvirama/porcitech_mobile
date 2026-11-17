@@ -131,10 +131,10 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Ubíquese sobre el corral. Mantenga la cámara paralela al dorso del animal (~1.2 m de altura).',
+                      'Encuadre al cerdo dentro del óvalo y ubique el marcador ArUco (DICT_4X4_100) en la esquina cian. Sin red, la foto se guarda en el dispositivo.',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 12,
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -158,85 +158,139 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
                     BoxShadow(color: Colors.black45, blurRadius: 16, offset: Offset(0, 6)),
                   ],
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.mintSoft,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.center_focus_strong_rounded,
-                            color: AppColors.primaryDark,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                child: _iaResult!.metodo == 'cola_offline'
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
                             children: [
-                              const Text(
-                                'PESO ESTIMADO POR VISIÓN IA',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.slateMuted,
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.warningLight,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.cloud_off_rounded,
+                                  color: AppColors.warningOrange,
                                 ),
                               ),
-                              Text(
-                                '${_iaResult!.pesoEstimado.toStringAsFixed(1)} ${_iaResult!.unidad}',
-                                style: const TextStyle(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.slateDark,
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'FOTOGRAFÍA GUARDADA EN DISPOSITIVO (HU20)',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.warningOrange,
+                                      ),
+                                    ),
+                                    SizedBox(height: 2),
+                                    Text(
+                                      'Encolada para análisis IA al reconectar',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.slateDark,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: AppColors.mintSoft,
-                            borderRadius: BorderRadius.circular(20),
+                          const SizedBox(height: 12),
+                          TactileButton(
+                            text: 'Aceptar y Continuar en Galpón',
+                            icon: Icons.check_rounded,
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
                           ),
-                          child: Text(
-                            'Confianza: ${((_iaResult!.confianzaIa ?? 0.92) * 100).toInt()}%',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primaryDark,
+                        ],
+                      )
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.mintSoft,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.center_focus_strong_rounded,
+                                  color: AppColors.primaryDark,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'PESO ESTIMADO POR VISIÓN IA',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.slateMuted,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${_iaResult!.pesoEstimado.toStringAsFixed(1)} ${_iaResult!.unidad}',
+                                      style: const TextStyle(
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.w900,
+                                        color: AppColors.slateDark,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: AppColors.mintSoft,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  'Confianza: ${((_iaResult!.confianzaIa ?? 0.92) * 100).toInt()}%',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primaryDark,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (_iaResult!.largoCm != null || _iaResult!.anchoCm != null) ...[
+                            const SizedBox(height: 10),
+                            Text(
+                              'Biometría dorsal: Largo ${_iaResult!.largoCm?.toStringAsFixed(1) ?? "-"} cm • Ancho ${_iaResult!.anchoCm?.toStringAsFixed(1) ?? "-"} cm • Área ${_iaResult!.areaCm2?.toStringAsFixed(0) ?? "-"} cm²',
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.slateMuted,
+                              ),
                             ),
+                          ],
+                          const SizedBox(height: 14),
+                          TactileButton(
+                            text: 'Aplicar Peso Estimado al Registro',
+                            icon: Icons.check_rounded,
+                            onPressed: () {
+                              widget.onPesoAplicado(_iaResult!.pesoEstimado);
+                              Navigator.pop(context);
+                            },
                           ),
-                        ),
-                      ],
-                    ),
-                    if (_iaResult!.largoCm != null || _iaResult!.anchoCm != null) ...[
-                      const SizedBox(height: 10),
-                      Text(
-                        'Biometría dorsal: Largo ${_iaResult!.largoCm?.toStringAsFixed(1) ?? "-"} cm • Ancho ${_iaResult!.anchoCm?.toStringAsFixed(1) ?? "-"} cm • Área ${_iaResult!.areaCm2?.toStringAsFixed(0) ?? "-"} cm²',
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.slateMuted,
-                        ),
+                        ],
                       ),
-                    ],
-                    const SizedBox(height: 14),
-                    TactileButton(
-                      text: 'Aplicar Peso Estimado al Registro',
-                      icon: Icons.check_rounded,
-                      onPressed: () {
-                        widget.onPesoAplicado(_iaResult!.pesoEstimado);
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ],
-                ),
               ),
             ),
           ],
@@ -347,6 +401,14 @@ class _CenitalGuidePainter extends CustomPainter {
       Offset(center.dx, center.dy + 20),
       markerPaint,
     );
+
+    // Guía para marcador ArUco (DICT_4X4_100) en esquina superior derecha
+    final arucoPaint = Paint()
+      ..color = Colors.cyanAccent.withValues(alpha: 0.9)
+      ..strokeWidth = 2.2
+      ..style = PaintingStyle.stroke;
+    final arucoRect = Rect.fromLTWH(size.width - 104, 110, 74, 74);
+    canvas.drawRect(arucoRect, arucoPaint);
   }
 
   @override

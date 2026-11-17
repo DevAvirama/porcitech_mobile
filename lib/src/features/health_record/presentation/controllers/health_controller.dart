@@ -131,7 +131,12 @@ class HealthNotifier extends Notifier<HealthState> {
     );
   }
 
-  Future<void> toggleProtocolo(String protocoloId, bool cumplido) async {
+  Future<void> toggleProtocolo(
+    String protocoloId,
+    bool cumplido, {
+    String? corralId,
+    String? observaciones,
+  }) async {
     final updated = state.protocolos.map((p) {
       if (p.id == protocoloId) {
         return p.copyWith(cumplidoHoy: cumplido);
@@ -143,6 +148,8 @@ class HealthNotifier extends Notifier<HealthState> {
     await _repository.toggleProtocoloBioseguridad(
       protocoloId: protocoloId,
       cumplido: cumplido,
+      corralId: corralId,
+      observaciones: observaciones,
     );
   }
 }

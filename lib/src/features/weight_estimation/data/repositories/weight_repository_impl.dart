@@ -90,17 +90,56 @@ class WeightRepositoryImpl implements WeightRepository {
     required File imagenCenital,
     bool persistir = true,
   }) async {
+    final resolvedAnimalUuid = animalUuid ?? PorcinoModel.resolveUuid(porcinoId);
+    final resolvedCorralUuid = corralUuid ?? PorcinoModel.resolveCorralUuid(porcinoId);
+
+    Future<IaWeightEstimationResult> queueOfflinePhoto() async {
+      final offlinePayload = <String, dynamic>{
+        'id_cerdo': ?resolvedAnimalUuid,
+        'corral_id': ?resolvedCorralUuid,
+        'persistir': persistir.toString(),
+      };
+      await cacheService.enqueueSyncItem(
+        endpoint: ApiConstants.iaEstimarPeso,
+        method: 'POST',
+        payload: offlinePayload,
+        filePath: imagenCenital.path,
+        description: 'Foto cenital IA porcino #$porcinoId (en dispositivo)',
+      );
+      return IaWeightEstimationResult(
+        porcinoId: porcinoId,
+        pesoEstimado: 0.0,
+        unidad: 'kg',
+        metodo: 'cola_offline',
+        fecha: DateTime.now(),
+        confianzaIa: 0.0,
+        persistido: false,
+      );
+    }
+
+    if (cacheService.isOfflineModeEnabled()) {
+      final queued = await queueOfflinePhoto();
+      return Right(queued);
+    }
+
     try {
       final result = await remoteDataSource.estimarPesoPorIa(
         porcinoId: porcinoId,
-        animalUuid: animalUuid,
-        corralUuid: corralUuid,
+        animalUuid: resolvedAnimalUuid,
+        corralUuid: resolvedCorralUuid,
         imagenCenital: imagenCenital,
         persistir: persistir,
       );
       return Right(result);
+    } on NoInternetException {
+      final queued = await queueOfflinePhoto();
+      return Right(queued);
     } on AppException catch (e) {
-      return Left(ServerFailure(e.message, e.statusCode));
+      if (e.statusCode != null && e.statusCode! >= 400 && e.statusCode! < 500) {
+        return Left(ServerFailure(e.message, e.statusCode));
+      }
+      final queued = await queueOfflinePhoto();
+      return Right(queued);
     } catch (e) {
       return Left(UnexpectedFailure(e.toString()));
     }

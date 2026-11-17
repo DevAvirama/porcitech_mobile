@@ -242,6 +242,88 @@ class DashboardDeCampoPorcitech extends ConsumerWidget {
               ),
               const SizedBox(height: 22),
 
+              // --- RESUMEN DE LA JORNADA (HU36 - Funciona Offline) ---
+              if (summary != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Resumen de la Jornada',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.senaBlue,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: isOffline ? AppColors.warningLight : AppColors.mintSoft,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              isOffline ? 'Caché Offline' : 'En Tiempo Real',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: isOffline
+                                    ? AppColors.warningOrange
+                                    : AppColors.primaryDark,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDayTaskBadge(
+                              label: 'Retiros Vigentes',
+                              count: summary.alertasSanitarias,
+                              color: AppColors.alertRedDark,
+                              bgColor: AppColors.alertRedLight,
+                              onTap: onOpenSanidad,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildDayTaskBadge(
+                              label: 'Partos / Gestación',
+                              count: summary.hembrasGestacion,
+                              color: const Color(0xFF7E22CE),
+                              bgColor: const Color(0xFFF3E8FF),
+                              onTap: onOpenPartos,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildDayTaskBadge(
+                              label: 'Por Sincronizar',
+                              count: summary.registrosPendientesSync,
+                              color: AppColors.warningOrange,
+                              bgColor: AppColors.warningLight,
+                              onTap: onOpenAjustes,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+
               // --- MÉTRICAS PRINCIPALES DEL GALPÓN ---
               const Text(
                 'Indicadores Operativos del Hato',
@@ -650,6 +732,50 @@ class DashboardDeCampoPorcitech extends ConsumerWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDayTaskBadge({
+    required String label,
+    required int count,
+    required Color color,
+    required Color bgColor,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ],
         ),
       ),
     );
