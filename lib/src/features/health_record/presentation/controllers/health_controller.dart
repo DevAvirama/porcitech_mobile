@@ -145,11 +145,24 @@ class HealthNotifier extends Notifier<HealthState> {
     }).toList();
     state = state.copyWith(protocolos: updated);
 
-    await _repository.toggleProtocoloBioseguridad(
+    final result = await _repository.toggleProtocoloBioseguridad(
       protocoloId: protocoloId,
       cumplido: cumplido,
       corralId: corralId,
       observaciones: observaciones,
+    );
+    result.fold(
+      (failure) {
+        // Revertir el cambio optimista si el servidor rechazó el registro (4xx).
+        final reverted = state.protocolos.map((p) {
+          if (p.id == protocoloId) {
+            return p.copyWith(cumplidoHoy: !cumplido);
+          }
+          return p;
+        }).toList();
+        state = state.copyWith(protocolos: reverted, errorMessage: failure.message);
+      },
+      (_) {},
     );
   }
 }

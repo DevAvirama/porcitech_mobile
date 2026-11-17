@@ -391,13 +391,9 @@ class SyncRepositoryImpl implements SyncRepository {
     try {
       final profile = await remoteDataSource.getUserProfile();
       return Right(profile);
-    } on AppException {
-      return const Right({
-        'username': 'operario_porcitech',
-        'email': 'operario@sigep.com',
-        'role': 'Operario de Galpón',
-        'granja': 'Unidad Porcina SENA',
-      });
+    } on AppException catch (e) {
+      // Sin red o sesión inválida: la UI usa el usuario autenticado en caché (authState.user).
+      return Left(ServerFailure(e.message, e.statusCode));
     } catch (e) {
       return Left(UnexpectedFailure(e.toString()));
     }

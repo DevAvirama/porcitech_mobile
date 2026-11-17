@@ -25,19 +25,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
   }) async {
     if (cacheService.isOfflineModeEnabled()) {
-      final cachedUser = await secureStorage.getUserData();
-      if (cachedUser['email'] != null && cachedUser['email']!.isNotEmpty) {
-        return Right(
-          UserEntity(
-            id: 1,
-            email: cachedUser['email']!,
-            name: cachedUser['name'] ?? 'Operario de Campo',
-            role: cachedUser['role'] ?? 'operario',
-            token: 'offline_token_${DateTime.now().millisecondsSinceEpoch}',
-            granja: 'Unidad Porcina SENA (Modo Offline)',
-          ),
-        );
-      }
+      return _offlineLogin(email);
     }
 
     try {
@@ -59,25 +47,42 @@ class AuthRepositoryImpl implements AuthRepository {
     } on UnauthorizedException catch (e) {
       return Left(AuthFailure(e.message, e.statusCode));
     } on NoInternetException catch (e) {
-      final cachedUser = await secureStorage.getUserData();
-      if (cachedUser['email'] != null && cachedUser['email']!.isNotEmpty) {
-        return Right(
-          UserEntity(
-            id: 1,
-            email: cachedUser['email']!,
-            name: cachedUser['name'] ?? 'Operario de Campo',
-            role: cachedUser['role'] ?? 'operario',
-            token: 'offline_cached_token',
-            granja: 'Unidad Porcina SENA (Offline)',
-          ),
-        );
-      }
-      return Left(NetworkFailure(e.message));
+      final offline = await _offlineLogin(email);
+      return offline.isRight() ? offline : Left(NetworkFailure(e.message));
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message, e.statusCode));
     } catch (e) {
       return Left(UnexpectedFailure(e.toString()));
     }
+  }
+
+  /// Ingreso sin red: solo se permite reabrir la sesión del ÚLTIMO usuario que se autenticó
+  /// en línea en este dispositivo, si su token real sigue guardado (no cerró sesión ni fue
+  /// revocado con 401). No acepta credenciales de terceros ni fabrica tokens.
+  Future<Either<Failure, UserEntity>> _offlineLogin(String email) async {
+    final cachedUser = await secureStorage.getUserData();
+    final cachedEmail = cachedUser['email']?.trim().toLowerCase() ?? '';
+    final token = await secureStorage.getAccessToken();
+    if (cachedEmail.isEmpty || token == null || token.isEmpty) {
+      return const Left(
+        AuthFailure('Sin conexión: inicie sesión en línea al menos una vez en este dispositivo.'),
+      );
+    }
+    if (cachedEmail != email.trim().toLowerCase()) {
+      return const Left(
+        AuthFailure('Sin conexión solo puede ingresar el último usuario autenticado en este dispositivo.'),
+      );
+    }
+    return Right(
+      UserModel(
+        id: 1,
+        email: cachedUser['email']!,
+        name: cachedUser['name'] ?? 'Operario de Campo',
+        role: cachedUser['role'] ?? 'operario',
+        token: token,
+        granja: 'Unidad Porcina SENA (Offline)',
+      ),
+    );
   }
 
   @override

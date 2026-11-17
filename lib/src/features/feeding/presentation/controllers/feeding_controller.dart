@@ -139,59 +139,6 @@ class FeedingNotifier extends Notifier<FeedingState> {
       }
     }
 
-    if (insumosList.isEmpty) {
-      insumosList = const [
-        InventoryItemEntity(
-          id: 'item-alim-01',
-          categoriaCodigo: 'ALIM',
-          categoriaNombre: 'Alimentos Concentrados',
-          codigoSku: 'CON-CEB-40',
-          nombre: 'Concentrado Ceba Finalizador',
-          unidadMedida: 'kg',
-          stockActual: 1240.0,
-          stockMinimo: 300.0,
-          costoUnitario: 2450.0,
-          ubicacionBodega: 'Bodega 1 - Estiba A',
-        ),
-        InventoryItemEntity(
-          id: 'item-alim-02',
-          categoriaCodigo: 'ALIM',
-          categoriaNombre: 'Alimentos Concentrados',
-          codigoSku: 'CON-LEV-40',
-          nombre: 'Concentrado Levante Desarrollo',
-          unidadMedida: 'kg',
-          stockActual: 680.0,
-          stockMinimo: 250.0,
-          costoUnitario: 2600.0,
-          ubicacionBodega: 'Bodega 1 - Estiba B',
-        ),
-        InventoryItemEntity(
-          id: 'item-alim-03',
-          categoriaCodigo: 'ALIM',
-          categoriaNombre: 'Alimentos Concentrados',
-          codigoSku: 'CON-PRE-20',
-          nombre: 'Pre-iniciador Fase 1 Lechón',
-          unidadMedida: 'kg',
-          stockActual: 95.0,
-          stockMinimo: 120.0,
-          costoUnitario: 4100.0,
-          ubicacionBodega: 'Bodega 1 - Estiba C',
-        ),
-        InventoryItemEntity(
-          id: 'item-bio-01',
-          categoriaCodigo: 'SAN',
-          categoriaNombre: 'Biológicos y Farmacia',
-          codigoSku: 'VAC-PPC-50',
-          nombre: 'Vacuna Peste Porcina Clásica (PPC)',
-          unidadMedida: 'dosis',
-          stockActual: 150.0,
-          stockMinimo: 50.0,
-          costoUnitario: 3200.0,
-          ubicacionBodega: 'Nevera Biológicos 4°C',
-        ),
-      ];
-    }
-
     state = state.copyWith(
       isLoading: false,
       raciones: racionesList,

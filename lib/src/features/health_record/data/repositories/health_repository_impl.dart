@@ -196,7 +196,7 @@ class HealthRepositoryImpl implements HealthRepository {
   @override
   Future<Either<Failure, List<BiosecurityProtocolItem>>> getProtocolosBioseguridad() async {
     if (cacheService.isOfflineModeEnabled()) {
-      return Right(_getCachedOrSeedProtocolos());
+      return Right(_getCachedProtocolos());
     }
     try {
       final list = await remoteDataSource.getProtocolosBioseguridad();
@@ -218,13 +218,13 @@ class HealthRepositoryImpl implements HealthRepository {
         await cacheService.cacheJson(cacheService.keyCachedProtocols, raw);
         return Right(list);
       }
-      return Right(_getCachedOrSeedProtocolos());
+      return Right(_getCachedProtocolos());
     } catch (e) {
-      return Right(_getCachedOrSeedProtocolos());
+      return Right(_getCachedProtocolos());
     }
   }
 
-  List<BiosecurityProtocolItem> _getCachedOrSeedProtocolos() {
+  List<BiosecurityProtocolItem> _getCachedProtocolos() {
     final cached = cacheService.getCachedJson(cacheService.keyCachedProtocols);
     if (cached is List && cached.isNotEmpty) {
       return cached
@@ -243,7 +243,7 @@ class HealthRepositoryImpl implements HealthRepository {
           )
           .toList();
     }
-    return _seedProtocolos();
+    return const [];
   }
 
   Future<void> _updateCachedProtocolStatus(String protocoloId, bool cumplido) async {
@@ -297,6 +297,18 @@ class HealthRepositoryImpl implements HealthRepository {
         observaciones: observaciones,
       );
       return Right(ok);
+    } on AppException catch (e) {
+      if (e.statusCode != null && e.statusCode! >= 400 && e.statusCode! < 500) {
+        await _updateCachedProtocolStatus(protocoloId, !cumplido);
+        return Left(ServerFailure(e.message, e.statusCode));
+      }
+      await cacheService.enqueueSyncItem(
+        endpoint: ApiConstants.bioseguridadEjecuciones,
+        method: 'POST',
+        payload: payload,
+        description: 'Bioseguridad protocolo ${cumplido ? "cumplido" : "pendiente"}',
+      );
+      return const Right(true);
     } catch (e) {
       await cacheService.enqueueSyncItem(
         endpoint: ApiConstants.bioseguridadEjecuciones,
@@ -306,42 +318,5 @@ class HealthRepositoryImpl implements HealthRepository {
       );
       return const Right(true);
     }
-  }
-
-  List<BiosecurityProtocolItem> _seedProtocolos() {
-    return const [
-      BiosecurityProtocolItem(
-        id: 'proto-01',
-        codigo: 'BIO-01',
-        tipoProtocolo: 'operacional',
-        tarea: 'Recambio de solución desinfectante en pediluvios',
-        descripcion: 'Verificar concentración de amonio cuaternario o yodo al ingreso de cada galpón.',
-        frecuencia: 'Diaria',
-      ),
-      BiosecurityProtocolItem(
-        id: 'proto-02',
-        codigo: 'BIO-02',
-        tipoProtocolo: 'estructural',
-        tarea: 'Arco sanitario y desinfección de vehículos',
-        descripcion: 'Aspersión completa de camiones de alimento e insumos en portería.',
-        frecuencia: 'Por ingreso',
-      ),
-      BiosecurityProtocolItem(
-        id: 'proto-03',
-        codigo: 'BIO-03',
-        tipoProtocolo: 'operacional',
-        tarea: 'Ducha sanitaria y cambio de dotación',
-        descripcion: 'Ingreso obligatorio con overol y botas exclusivas de la unidad porcina.',
-        frecuencia: 'Diaria',
-      ),
-      BiosecurityProtocolItem(
-        id: 'proto-04',
-        codigo: 'BIO-04',
-        tipoProtocolo: 'operacional',
-        tarea: 'Control de vectores, aves y roedores',
-        descripcion: 'Inspección de mallas pajareras y estaciones de cebado perimetral.',
-        frecuencia: 'Semanal',
-      ),
-    ];
   }
 }

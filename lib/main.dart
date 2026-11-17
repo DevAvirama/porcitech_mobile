@@ -89,28 +89,31 @@ class MainDashboardFlow extends ConsumerStatefulWidget {
 class _MainDashboardFlowState extends ConsumerState<MainDashboardFlow> {
   PorcinoEntity? _activePorcino;
 
-  PorcinoEntity _fallbackPorcino({bool female = false}) {
+  /// Devuelve un animal real del hato para abrir un formulario. Nunca inventa datos:
+  /// si no hay animales (o no hay hembras para partos) informa al operario y devuelve null.
+  PorcinoEntity? _fallbackPorcino({bool female = false}) {
     final all = ref.read(animalsNotifierProvider).porcinos;
+    PorcinoEntity? candidate;
     if (female) {
-      final sow = all.where((p) => p.sexo.toLowerCase() == 'hembra').firstOrNull;
-      if (sow != null) return sow;
+      final active = _activePorcino;
+      candidate = (active != null && active.sexo.toLowerCase() == 'hembra')
+          ? active
+          : all.where((p) => p.sexo.toLowerCase() == 'hembra').firstOrNull;
+    } else {
+      candidate = _activePorcino ?? all.firstOrNull;
     }
-    if (_activePorcino != null) return _activePorcino!;
-    if (all.isNotEmpty) return all.first;
-    return PorcinoEntity(
-      id: 4092,
-      codigo: female ? 'CERDA-H-104' : 'POR-4092',
-      raza: female ? 'Landrace' : 'Landrace x Pietrain',
-      sexo: female ? 'Hembra' : 'Macho',
-      fechaNacimiento: DateTime.now().subtract(const Duration(days: 145)),
-      loteId: 1,
-      loteNombre: female ? 'Corral Gestación' : 'Corral Ceba',
-      pesoActual: female ? 210.0 : 82.5,
-      estadoSanitario: 'Sano',
-      fase: female ? 'Gestación' : 'Ceba',
-      gdpActualGramoDia: 820.0,
-      diasEnFase: 65,
-    );
+    if (candidate == null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            female
+                ? 'No hay hembras registradas. Registre o descargue el catálogo del hato primero.'
+                : 'No hay animales registrados. Registre o descargue el catálogo del hato primero.',
+          ),
+        ),
+      );
+    }
+    return candidate;
   }
 
   void _navigateTo(Widget screen) {
@@ -225,6 +228,7 @@ class _MainDashboardFlowState extends ConsumerState<MainDashboardFlow> {
 
   void _openPesajeScreen(PorcinoEntity? porcino, {double? initialWeight}) {
     final target = porcino ?? _fallbackPorcino();
+    if (target == null) return;
     _navigateTo(
       RegistrarPesajePorcitech(
         porcino: target,
@@ -252,6 +256,7 @@ class _MainDashboardFlowState extends ConsumerState<MainDashboardFlow> {
 
   void _openSanidadScreen(PorcinoEntity? porcino) {
     final target = porcino ?? _fallbackPorcino();
+    if (target == null) return;
     _navigateTo(
       RegistroDeVacunacionPorcitech(
         porcino: target,
@@ -266,6 +271,7 @@ class _MainDashboardFlowState extends ConsumerState<MainDashboardFlow> {
 
   void _openPartoScreen(PorcinoEntity? sow) {
     final target = sow ?? _fallbackPorcino(female: true);
+    if (target == null) return;
     _navigateTo(
       RegistroDePartoCerdaH104(
         cerda: target,

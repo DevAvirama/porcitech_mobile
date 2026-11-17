@@ -23,7 +23,7 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
     String? filter,
   }) async {
     if (cacheService.isOfflineModeEnabled()) {
-      return Right(_getCachedOrSeedPorcinos(query: query, filter: filter));
+      return Right(_getCachedPorcinos(query: query, filter: filter));
     }
 
     try {
@@ -36,9 +36,9 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
         await cacheService.cacheJson(cacheService.keyCachedAnimals, jsonList);
         return Right(remoteList);
       }
-      return Right(_getCachedOrSeedPorcinos(query: query, filter: filter));
+      return Right(_getCachedPorcinos(query: query, filter: filter));
     } on AppException {
-      return Right(_getCachedOrSeedPorcinos(query: query, filter: filter));
+      return Right(_getCachedPorcinos(query: query, filter: filter));
     } catch (e) {
       return Left(UnexpectedFailure(e.toString()));
     }
@@ -47,7 +47,7 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
   @override
   Future<Either<Failure, PorcinoEntity>> getPorcinoById(int id, {String? uuid}) async {
     if (cacheService.isOfflineModeEnabled()) {
-      final list = _getCachedOrSeedPorcinos();
+      final list = _getCachedPorcinos();
       final found = list.cast<PorcinoEntity?>().firstWhere(
             (p) => p?.id == id || (uuid != null && p?.uuid == uuid),
             orElse: () => null,
@@ -60,7 +60,7 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
       final item = await remoteDataSource.getPorcinoById(id, uuid: uuid);
       return Right(item);
     } on AppException {
-      final list = _getCachedOrSeedPorcinos();
+      final list = _getCachedPorcinos();
       final found = list.cast<PorcinoEntity?>().firstWhere(
             (p) => p?.id == id || (uuid != null && p?.uuid == uuid),
             orElse: () => null,
@@ -77,7 +77,7 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
     final cleanCode = codigo.trim().toUpperCase();
 
     if (cacheService.isOfflineModeEnabled()) {
-      final list = _getCachedOrSeedPorcinos();
+      final list = _getCachedPorcinos();
       final found = list.cast<PorcinoEntity?>().firstWhere(
             (p) =>
                 p?.codigo.toUpperCase() == cleanCode ||
@@ -93,7 +93,7 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
       final item = await remoteDataSource.getPorcinoByQr(cleanCode);
       return Right(item);
     } on AppException {
-      final list = _getCachedOrSeedPorcinos();
+      final list = _getCachedPorcinos();
       final found = list.cast<PorcinoEntity?>().firstWhere(
             (p) =>
                 p?.codigo.toUpperCase() == cleanCode ||
@@ -137,7 +137,7 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
     double pesoInicialKg = 0.0,
   }) async {
     final resolvedCorralUuid = corralUuid ?? LoteModel.resolveUuid(loteId);
-    final lotes = _getCachedOrSeedLotes();
+    final lotes = _getCachedLotes();
     final matchedLote = lotes.cast<LoteEntity?>().firstWhere(
           (l) => l?.id == loteId || (resolvedCorralUuid != null && l?.uuid == resolvedCorralUuid),
           orElse: () => null,
@@ -154,10 +154,10 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
       fechaNacimiento: fechaNacimiento,
       loteId: loteId,
       loteNombre: matchedLote?.codigo ?? 'Corral $loteId',
-      pesoActual: pesoInicialKg > 0 ? pesoInicialKg : 18.5,
+      pesoActual: pesoInicialKg > 0 ? pesoInicialKg : 0.0,
       estadoSanitario: 'Sano',
       fase: estado,
-      gdpActualGramoDia: 520.0,
+      gdpActualGramoDia: 0.0,
       diasEnFase: 1,
     );
 
@@ -233,7 +233,7 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
   @override
   Future<Either<Failure, List<LoteEntity>>> getLotes() async {
     if (cacheService.isOfflineModeEnabled()) {
-      return Right(_getCachedOrSeedLotes());
+      return Right(_getCachedLotes());
     }
 
     try {
@@ -243,9 +243,9 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
         await cacheService.cacheJson(cacheService.keyCachedLotes, jsonList);
         return Right(list);
       }
-      return Right(_getCachedOrSeedLotes());
+      return Right(_getCachedLotes());
     } on AppException {
-      return Right(_getCachedOrSeedLotes());
+      return Right(_getCachedLotes());
     } catch (e) {
       return Left(UnexpectedFailure(e.toString()));
     }
@@ -332,7 +332,7 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
   }
 
   void _addLoteToCache(LoteModel model) {
-    final cached = _getCachedOrSeedLotes();
+    final cached = _getCachedLotes();
     cached.insert(0, model);
     final jsonList = cached.map((e) {
       if (e is LoteModel) return e.toJson();
@@ -342,7 +342,7 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
   }
 
   void _addPorcinoToCache(PorcinoModel model) {
-    final cached = _getCachedOrSeedPorcinos();
+    final cached = _getCachedPorcinos();
     cached.insert(0, model);
     final jsonList = cached.map((e) {
       if (e is PorcinoModel) return e.toJson();
@@ -351,84 +351,14 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
     cacheService.cacheJson(cacheService.keyCachedAnimals, jsonList);
   }
 
-  List<PorcinoEntity> _getCachedOrSeedPorcinos({String? query, String? filter}) {
+  List<PorcinoEntity> _getCachedPorcinos({String? query, String? filter}) {
     List<PorcinoModel> list = [];
     final cachedJson = cacheService.getCachedJson(cacheService.keyCachedAnimals);
     if (cachedJson != null && cachedJson is List) {
       list = cachedJson
-          .map((e) => PorcinoModel.fromJson(e as Map<String, dynamic>))
+          .whereType<Map<String, dynamic>>()
+          .map(PorcinoModel.fromJson)
           .toList();
-    }
-
-    if (list.isEmpty) {
-      list = [
-        PorcinoModel(
-          id: 4092,
-          codigo: 'POR-4092',
-          codigoQr: 'QR-POR-4092',
-          raza: 'Landrace x Pietrain',
-          sexo: 'Macho Castrado',
-          fechaNacimiento: DateTime.now().subtract(const Duration(days: 145)),
-          loteId: 3,
-          loteNombre: 'COR-CEB-03',
-          pesoActual: 82.5,
-          estadoSanitario: 'Sano',
-          fase: 'Ceba',
-          gdpActualGramoDia: 820.0,
-          diasEnFase: 65,
-        ),
-        PorcinoModel(
-          id: 104,
-          codigo: 'CERDA-H-104',
-          codigoQr: 'QR-CERDA-H-104',
-          raza: 'Landrace Puro',
-          sexo: 'Hembra',
-          fechaNacimiento: DateTime.now().subtract(const Duration(days: 480)),
-          loteId: 1,
-          loteNombre: 'COR-GES-01',
-          pesoActual: 215.0,
-          estadoSanitario: 'Sano',
-          fase: 'Gestación',
-          gdpActualGramoDia: 380.0,
-          diasEnFase: 110,
-        ),
-        PorcinoModel(
-          id: 2015,
-          codigo: 'POR-2015',
-          codigoQr: 'QR-POR-2015',
-          raza: 'Duroc',
-          sexo: 'Macho',
-          fechaNacimiento: DateTime.now().subtract(const Duration(days: 90)),
-          loteId: 2,
-          loteNombre: 'COR-LEV-02',
-          pesoActual: 48.0,
-          estadoSanitario: 'Retiro Farmacológico',
-          fase: 'Levante',
-          gdpActualGramoDia: 740.0,
-          diasEnFase: 35,
-          medicacionActiva: 'Oxitetraciclina L.A.',
-          diasRetiroRestantes: 12,
-          fechaFinRetiro: DateTime.now().add(const Duration(days: 12)),
-        ),
-        PorcinoModel(
-          id: 503,
-          codigo: 'POR-503',
-          codigoQr: 'QR-POR-503',
-          raza: 'Large White',
-          sexo: 'Hembra',
-          fechaNacimiento: DateTime.now().subtract(const Duration(days: 120)),
-          loteId: 3,
-          loteNombre: 'COR-CEB-03',
-          pesoActual: 76.0,
-          estadoSanitario: 'En Tratamiento',
-          fase: 'Ceba',
-          gdpActualGramoDia: 680.0,
-          diasEnFase: 50,
-          medicacionActiva: 'Amoxicilina Trihidrato',
-          diasRetiroRestantes: 5,
-          fechaFinRetiro: DateTime.now().add(const Duration(days: 5)),
-        ),
-      ];
     }
 
     var filtered = list;
@@ -461,45 +391,14 @@ class AnimalsRepositoryImpl implements AnimalsRepository {
     return filtered;
   }
 
-  List<LoteEntity> _getCachedOrSeedLotes() {
+  List<LoteEntity> _getCachedLotes() {
     final cachedJson = cacheService.getCachedJson(cacheService.keyCachedLotes);
-    if (cachedJson != null && cachedJson is List && cachedJson.isNotEmpty) {
+    if (cachedJson != null && cachedJson is List) {
       return cachedJson
-          .map((e) => LoteModel.fromJson(e as Map<String, dynamic>))
+          .whereType<Map<String, dynamic>>()
+          .map<LoteEntity>(LoteModel.fromJson)
           .toList();
     }
-
-    return const [
-      LoteModel(
-        id: 1,
-        codigo: 'COR-GES-01',
-        nombre: 'Corral Gestación A',
-        fase: 'Gestación',
-        cantidadPorcinos: 12,
-        capacidadMaxima: 25,
-        pesoPromedio: 210.5,
-        galpon: 'Galpón 1 - Maternidad y Gestación',
-      ),
-      LoteModel(
-        id: 2,
-        codigo: 'COR-LEV-02',
-        nombre: 'Corral Levante Norte',
-        fase: 'Levante',
-        cantidadPorcinos: 24,
-        capacidadMaxima: 30,
-        pesoPromedio: 47.8,
-        galpon: 'Galpón 2 - Levante',
-      ),
-      LoteModel(
-        id: 3,
-        codigo: 'COR-CEB-03',
-        nombre: 'Corral Ceba 03',
-        fase: 'Ceba',
-        cantidadPorcinos: 28,
-        capacidadMaxima: 35,
-        pesoPromedio: 81.4,
-        galpon: 'Galpón 3 - Ceba Tecnificada',
-      ),
-    ];
+    return <LoteEntity>[];
   }
 }
