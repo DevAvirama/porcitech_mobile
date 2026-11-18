@@ -92,7 +92,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
         cachedServices == null &&
         pendingCount == 0) {
       return const Left(
-        CacheFailure(
+        StorageFailure(
           'Sin catálogo offline guardado. Descargue los datos desde Ajustes cuando tenga red.',
         ),
       );

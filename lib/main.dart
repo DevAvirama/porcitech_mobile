@@ -17,6 +17,7 @@ import 'src/features/dashboard/presentation/screens/dashboard_de_campo_porcitech
 import 'src/features/feeding/presentation/screens/alimentacion_e_inventario_porcitech.dart';
 import 'src/features/health_record/presentation/screens/registro_de_vacunacion_porcitech.dart';
 import 'src/features/reproduction/presentation/screens/registro_de_parto_cerda_h_104.dart';
+import 'src/features/sync/presentation/controllers/sync_controller.dart';
 import 'src/features/sync/presentation/screens/ajustes_de_cuenta_porcitech.dart';
 import 'src/features/weight_estimation/presentation/screens/captura_cenital_screen.dart';
 import 'src/features/weight_estimation/presentation/screens/registrar_pesaje_porcitech.dart';

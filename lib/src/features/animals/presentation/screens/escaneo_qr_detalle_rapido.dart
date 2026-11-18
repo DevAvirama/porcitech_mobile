@@ -373,6 +373,6 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
           ),
         ],
       ),
-    ).whenComplete(controller.dispose);
+    );
   }
 }
