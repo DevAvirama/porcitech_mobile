@@ -293,6 +293,7 @@ class _RegistroDeVacunacionPorcitechState
 
             if (_aplicacionPorLote && lotes.isNotEmpty)
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: _selectedLoteUuid ?? _porcino.corralUuid ?? lotes.first.uuid,
                 decoration: const InputDecoration(
                   labelText: 'Corral / Lote Destino',
@@ -305,6 +306,8 @@ class _RegistroDeVacunacionPorcitechState
                         value: l.uuid,
                         child: Text(
                           '${l.codigo} • ${l.cantidadPorcinos} cerdos (${l.fase})',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 13.5),
                         ),
                       ),
@@ -362,6 +365,7 @@ class _RegistroDeVacunacionPorcitechState
             const SizedBox(height: 16),
 
             DropdownButtonFormField<String>(
+              isExpanded: true,
               initialValue: _tipoEvento,
               decoration: const InputDecoration(
                 labelText: 'Tipo de Evento Sanitario',
@@ -437,6 +441,7 @@ class _RegistroDeVacunacionPorcitechState
             if (medInsumos.isNotEmpty) ...[
               const SizedBox(height: 12),
               DropdownButtonFormField<String?>(
+                isExpanded: true,
                 key: ValueKey('med_insumo_$selectedInsumoId'),
                 initialValue: selectedInsumoId,
                 decoration: const InputDecoration(
@@ -605,6 +610,7 @@ class _RegistroDeVacunacionPorcitechState
             const SizedBox(height: 14),
 
             DropdownButtonFormField<String>(
+              isExpanded: true,
               initialValue: _viaAplicacion,
               decoration: const InputDecoration(
                 labelText: 'Vía de Administración',
@@ -814,6 +820,7 @@ class _RegistroDeVacunacionPorcitechState
           const SizedBox(height: 12),
           if (lotes.isNotEmpty)
             DropdownButtonFormField<String?>(
+              isExpanded: true,
               initialValue: _selectedBioCorralUuid,
               decoration: const InputDecoration(
                 labelText: 'Corral Evaluado',

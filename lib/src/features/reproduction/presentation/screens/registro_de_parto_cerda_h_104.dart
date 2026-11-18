@@ -489,6 +489,7 @@ class _RegistroDePartoCerdaH104State
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: _tipoServicio,
                 decoration: const InputDecoration(
                   labelText: 'Método Reproductivo',
@@ -690,6 +691,7 @@ class _RegistroDePartoCerdaH104State
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String?>(
+                      isExpanded: true,
                       initialValue: _corralPreceboDestinoUuid,
                       decoration: const InputDecoration(
                         labelText: 'Corral Destino',

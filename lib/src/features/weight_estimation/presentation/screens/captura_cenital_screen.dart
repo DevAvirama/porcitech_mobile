@@ -86,11 +86,15 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: Text(
-          'Captura Cenital IA • ${widget.porcino.codigo}',
-          style: const TextStyle(fontWeight: FontWeight.w700),
+        iconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
         ),
+        title: Text('Captura Cenital IA • ${widget.porcino.codigo}'),
       ),
+      bottomNavigationBar: _buildCaptureControls(),
       body: Stack(
         children: [
           if (_capturedImage != null) ...[
@@ -102,10 +106,30 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
               child: Container(
                 color: const Color(0xFF0F172A),
                 child: Center(
-                  child: Icon(
-                    Icons.center_focus_strong_rounded,
-                    size: 90,
-                    color: Colors.white.withValues(alpha: 0.15),
+                  child: GestureDetector(
+                    onTap: _isProcessing
+                        ? null
+                        : () => _captureOrPickPhoto(ImageSource.camera),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.photo_camera_rounded,
+                          size: 64,
+                          color: Colors.white.withValues(alpha: 0.35),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Toque aquí o el botón verde\npara tomar la foto del cerdo',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -154,7 +178,7 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
             Positioned(
               left: 20,
               right: 20,
-              bottom: 120,
+              bottom: 20,
               child: Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
@@ -319,60 +343,52 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
             ),
           ],
 
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              color: Colors.black.withValues(alpha: 0.85),
-              child: SafeArea(
-                top: false,
-                minimum: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.photo_library_outlined,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                    tooltip: 'Subir desde Galería',
-                    onPressed: () => _captureOrPickPhoto(ImageSource.gallery),
-                  ),
-                  GestureDetector(
-                    onTap: () => _captureOrPickPhoto(ImageSource.camera),
-                    child: Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 4),
-                        color: AppColors.senaGreen,
-                      ),
-                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 36),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.refresh_rounded,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                    tooltip: 'Limpiar Captura',
-                    onPressed: () {
-                      setState(() {
-                        _capturedImage = null;
-                        _iaResult = null;
-                      });
-                    },
-                  ),
-                ],
+        ],
+      ),
+    );
+  }
+
+  /// Barra de acciones fuera del área de dibujo: el Scaffold la ubica por encima
+  /// de la barra de gestos/navegación de Android gracias a SafeArea.
+  Widget _buildCaptureControls() {
+    return Container(
+      color: Colors.black,
+      child: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(24, 12, 24, 12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.photo_library_outlined, color: Colors.white, size: 28),
+              tooltip: 'Subir desde Galería',
+              onPressed: _isProcessing ? null : () => _captureOrPickPhoto(ImageSource.gallery),
+            ),
+            GestureDetector(
+              onTap: _isProcessing ? null : () => _captureOrPickPhoto(ImageSource.camera),
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 4),
+                  color: AppColors.senaGreen,
                 ),
+                child: const Icon(Icons.camera_alt, color: Colors.white, size: 36),
               ),
             ),
-          ),
-        ],
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 28),
+              tooltip: 'Limpiar Captura',
+              onPressed: () {
+                setState(() {
+                  _capturedImage = null;
+                  _iaResult = null;
+                });
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

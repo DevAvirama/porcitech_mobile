@@ -225,6 +225,7 @@ class _AlimentacionEInventarioPorcitechState
                     const SizedBox(height: 16),
                     if (lotes.isNotEmpty)
                       DropdownButtonFormField<LoteEntity>(
+                        isExpanded: true,
                         initialValue: corralActivo,
                         decoration: const InputDecoration(
                           labelText: 'Corral de Destino',
@@ -234,7 +235,11 @@ class _AlimentacionEInventarioPorcitechState
                             .map(
                               (l) => DropdownMenuItem(
                                 value: l,
-                                child: Text('${l.codigo} • ${l.nombre}'),
+                                child: Text(
+                                  '${l.codigo} • ${l.nombre}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             )
                             .toList(),
@@ -244,6 +249,7 @@ class _AlimentacionEInventarioPorcitechState
                     const SizedBox(height: 14),
                     if (alimentos.isNotEmpty)
                       DropdownButtonFormField<InventoryItemEntity>(
+                        isExpanded: true,
                         initialValue: alimentoActivo,
                         decoration: const InputDecoration(
                           labelText: 'Alimento / Insumo de Bodega',
@@ -254,7 +260,8 @@ class _AlimentacionEInventarioPorcitechState
                               (a) => DropdownMenuItem(
                                 value: a,
                                 child: Text(
-                                  '${a.nombre} (${a.stockActual.toStringAsFixed(0)} ${a.unidadMedida})',
+                                  '${a.nombre} · ${a.stockActual.toStringAsFixed(0)} ${a.unidadMedida}',
+                                  maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),

@@ -116,6 +116,7 @@ class _ListadoDeLotesYPorcinosPorcitechState
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String>(
+                              isExpanded: true,
                               initialValue: razaSelected,
                               decoration: const InputDecoration(
                                 labelText: 'Raza',
@@ -135,6 +136,7 @@ class _ListadoDeLotesYPorcinosPorcitechState
                           const SizedBox(width: 10),
                           Expanded(
                             child: DropdownButtonFormField<String>(
+                              isExpanded: true,
                               initialValue: sexoSelected,
                               decoration: const InputDecoration(
                                 labelText: 'Sexo',
@@ -156,6 +158,7 @@ class _ListadoDeLotesYPorcinosPorcitechState
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String>(
+                              isExpanded: true,
                               initialValue: estadoSelected,
                               decoration: const InputDecoration(
                                 labelText: 'Estado Productivo',
@@ -192,6 +195,7 @@ class _ListadoDeLotesYPorcinosPorcitechState
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<LoteEntity>(
+                        isExpanded: true,
                         initialValue: selectedLote,
                         decoration: const InputDecoration(
                           labelText: 'Asignar a Corral Activo',
@@ -333,6 +337,7 @@ class _ListadoDeLotesYPorcinosPorcitechState
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String>(
+                              isExpanded: true,
                               initialValue: faseSelected,
                               decoration: const InputDecoration(
                                 labelText: 'Fase Productiva',

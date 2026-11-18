@@ -73,12 +73,32 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
     super.dispose();
   }
 
+  /// Las chapetas impresas codifican la URL del pasaporte público
+  /// (ej. http://host:3000/trace/QR-2024-002). Se extrae solo el código final.
+  static String _extractQrCode(String raw) {
+    var code = raw.trim();
+    final traceIdx = code.indexOf('/trace/');
+    if (traceIdx >= 0) {
+      code = code.substring(traceIdx + '/trace/'.length);
+    } else if (code.startsWith('http://') || code.startsWith('https://')) {
+      final uri = Uri.tryParse(code);
+      final segments = uri?.pathSegments.where((s) => s.isNotEmpty).toList() ?? [];
+      if (segments.isNotEmpty) code = segments.last;
+    }
+    code = code.split('?').first.split('#').first.replaceAll('/', '').trim();
+    try {
+      return Uri.decodeComponent(code);
+    } catch (_) {
+      return code;
+    }
+  }
+
   Future<void> _handleBarcodeDetected(String rawCode) async {
     if (_isProcessingCode) return;
     setState(() => _isProcessingCode = true);
 
     final repository = ref.read(animalsRepositoryProvider);
-    final result = await repository.getPorcinoByQr(rawCode);
+    final result = await repository.getPorcinoByQr(_extractQrCode(rawCode));
 
     result.fold(
       (failure) {
@@ -283,10 +303,13 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: const Text(
-          'Identificación QR / Arete',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+        iconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
         ),
+        title: const Text('Identificación QR / Arete'),
         actions: [
           IconButton(
             icon: const Icon(Icons.flash_on_rounded, color: Colors.white),
