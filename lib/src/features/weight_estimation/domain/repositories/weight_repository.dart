@@ -20,5 +20,6 @@ abstract class WeightRepository {
     String? corralUuid,
     required File imagenCenital,
     bool persistir = true,
+    String anguloVista = 'auto',
   });
 }

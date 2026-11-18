@@ -23,6 +23,7 @@ abstract class WeightRemoteDataSource {
     String? corralUuid,
     required File imagenCenital,
     bool persistir = true,
+    String anguloVista = 'auto',
   });
 }
 
@@ -96,6 +97,7 @@ class WeightRemoteDataSourceImpl implements WeightRemoteDataSource {
     String? corralUuid,
     required File imagenCenital,
     bool persistir = true,
+    String anguloVista = 'auto',
   }) async {
     try {
       final fileName = imagenCenital.path.split('/').last;
@@ -105,6 +107,8 @@ class WeightRemoteDataSourceImpl implements WeightRemoteDataSource {
         'id_cerdo': ?resolvedAnimalUuid,
         'corral_id': ?resolvedCorralUuid,
         'persistir': persistir.toString(),
+        'angulo_vista': anguloVista,
+        'modo_movil': 'true',
         'file': await MultipartFile.fromFile(
           imagenCenital.path,
           filename: fileName,
@@ -140,6 +144,7 @@ class WeightRemoteDataSourceImpl implements WeightRemoteDataSource {
           largoCm: (data['largo_cm'] as num?)?.toDouble(),
           anchoCm: (data['ancho_cm'] as num?)?.toDouble(),
           imagenAnotadaBase64: data['imagen_anotada_base64'] as String?,
+          anguloVista: data['angulo_vista'] as String?,
           persistido: data['persistido'] as bool? ?? false,
         );
       }

@@ -32,6 +32,7 @@ class IaWeightEstimationResult extends Equatable {
   final double? largoCm;
   final double? anchoCm;
   final String? imagenAnotadaBase64;
+  final String? anguloVista;
   final bool persistido;
 
   const IaWeightEstimationResult({
@@ -45,6 +46,7 @@ class IaWeightEstimationResult extends Equatable {
     this.largoCm,
     this.anchoCm,
     this.imagenAnotadaBase64,
+    this.anguloVista,
     this.persistido = false,
   });
 
@@ -60,6 +62,7 @@ class IaWeightEstimationResult extends Equatable {
         largoCm,
         anchoCm,
         imagenAnotadaBase64,
+        anguloVista,
         persistido,
       ];
 }

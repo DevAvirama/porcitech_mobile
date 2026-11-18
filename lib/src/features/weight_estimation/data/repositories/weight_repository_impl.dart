@@ -93,6 +93,7 @@ class WeightRepositoryImpl implements WeightRepository {
     String? corralUuid,
     required File imagenCenital,
     bool persistir = true,
+    String anguloVista = 'auto',
   }) async {
     final resolvedAnimalUuid = animalUuid ?? PorcinoModel.resolveUuid(porcinoId);
     final resolvedCorralUuid = corralUuid ?? PorcinoModel.resolveCorralUuid(porcinoId);
@@ -103,13 +104,15 @@ class WeightRepositoryImpl implements WeightRepository {
         if (resolvedAnimalUuid == null) '_local_animal_id': porcinoId,
         'corral_id': ?resolvedCorralUuid,
         'persistir': 'true',
+        'angulo_vista': anguloVista,
+        'modo_movil': 'true',
       };
       await cacheService.enqueueSyncItem(
         endpoint: ApiConstants.iaEstimarPeso,
         method: 'POST',
         payload: offlinePayload,
         filePath: imagenCenital.path,
-        description: 'Foto cenital IA porcino #$porcinoId (en dispositivo)',
+        description: 'Foto de pesaje porcino #$porcinoId ($anguloVista)',
       );
       return IaWeightEstimationResult(
         porcinoId: porcinoId,
@@ -118,6 +121,7 @@ class WeightRepositoryImpl implements WeightRepository {
         metodo: 'cola_offline',
         fecha: DateTime.now(),
         confianzaIa: 0.0,
+        anguloVista: anguloVista,
         persistido: false,
       );
     }
@@ -134,6 +138,7 @@ class WeightRepositoryImpl implements WeightRepository {
         corralUuid: resolvedCorralUuid,
         imagenCenital: imagenCenital,
         persistir: persistir,
+        anguloVista: anguloVista,
       );
       return Right(result);
     } on NoInternetException {

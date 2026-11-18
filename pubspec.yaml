@@ -48,6 +48,7 @@ dependencies:
   mobile_scanner: ^7.4.2
   equatable: ^2.1.0
   permission_handler: ^11.4.0
+  camera: ^0.12.2
 
 dev_dependencies:
   flutter_test:

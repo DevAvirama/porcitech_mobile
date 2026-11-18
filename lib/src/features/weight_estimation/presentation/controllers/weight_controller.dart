@@ -93,6 +93,7 @@ class WeightNotifier extends Notifier<WeightState> {
     String? corralUuid,
     required File imageFile,
     bool persistir = true,
+    String anguloVista = 'auto',
   }) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     final result = await _repository.estimarPesoPorIa(
@@ -101,6 +102,7 @@ class WeightNotifier extends Notifier<WeightState> {
       corralUuid: corralUuid,
       imagenCenital: imageFile,
       persistir: persistir,
+      anguloVista: anguloVista,
     );
 
     return result.fold(
