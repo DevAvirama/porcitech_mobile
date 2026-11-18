@@ -40,40 +40,8 @@ class DashboardDeCampoPorcitech extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        titleSpacing: 12,
-        title: Row(
-          children: [
-            const BrandMark(compact: true),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    authState.user?.name ?? 'Operación de Campo',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.senaBlue,
-                    ),
-                  ),
-                  Text(
-                    '${(authState.user?.role ?? 'Operario').toUpperCase()} • ${authState.user?.granja ?? 'Unidad Porcina SENA'}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.slateMuted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+        titleSpacing: 14,
+        title: const BrandMark(compact: true, logoHeight: 30, fontSize: 19),
         actions: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -124,6 +92,51 @@ class DashboardDeCampoPorcitech extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // --- Cabecera de operario sin compresión en AppBar ---
+              Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: AppColors.senaBlue.withValues(alpha: 0.1),
+                      child: const Icon(
+                        Icons.person_rounded,
+                        color: AppColors.senaBlue,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            authState.user?.name ?? 'Operación de Campo',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.senaBlue,
+                            ),
+                          ),
+                          Text(
+                            '${(authState.user?.role ?? 'Operario').toUpperCase()} • ${authState.user?.granja ?? 'Unidad Porcina SENA'}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.slateMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               // --- Banner de Cola Pendiente si hay registros offline ---
               if (summary != null && summary.registrosPendientesSync > 0) ...[
                 Container(
@@ -426,7 +439,7 @@ class DashboardDeCampoPorcitech extends ConsumerWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: 1.2,
+                childAspectRatio: 1.05,
                 children: [
                   _buildQuickAccessCard(
                     title: 'Pesaje y Visión IA',

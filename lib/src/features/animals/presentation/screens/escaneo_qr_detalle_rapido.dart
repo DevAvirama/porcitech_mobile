@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:porcitech_mobile/src/core/theme/app_colors.dart';
+import 'package:porcitech_mobile/src/core/utils/camera_permission_helper.dart';
 import 'package:porcitech_mobile/src/core/widgets/status_badge.dart';
 import 'package:porcitech_mobile/src/core/widgets/tactile_button.dart';
 import 'package:porcitech_mobile/src/features/animals/domain/entities/porcino_entity.dart';
@@ -31,11 +32,14 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
   late final MobileScannerController _scannerController;
   late final AnimationController _laserController;
   bool _isProcessingCode = false;
+  bool _hasCameraPermission = false;
+  bool _checkingPermission = true;
 
   @override
   void initState() {
     super.initState();
     _scannerController = MobileScannerController(
+      autoStart: false,
       detectionSpeed: DetectionSpeed.noDuplicates,
       returnImage: false,
     );
@@ -43,6 +47,23 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _requestAndStartCamera();
+    });
+  }
+
+  Future<void> _requestAndStartCamera() async {
+    if (!mounted) return;
+    setState(() => _checkingPermission = true);
+    final granted = await ensureCameraPermission(context);
+    if (!mounted) return;
+    setState(() {
+      _hasCameraPermission = granted;
+      _checkingPermission = false;
+    });
+    if (granted) {
+      await _scannerController.start();
+    }
   }
 
   @override
@@ -286,89 +307,134 @@ class _EscaneoQrDetalleRapidoState extends ConsumerState<EscaneoQrDetalleRapido>
       ),
       body: Stack(
         children: [
-          MobileScanner(
-            controller: _scannerController,
-            onDetect: (capture) {
-              final barcodes = capture.barcodes;
-              for (final barcode in barcodes) {
-                final val = barcode.rawValue;
-                if (val != null && val.isNotEmpty) {
-                  _handleBarcodeDetected(val);
-                  break;
+          if (_hasCameraPermission)
+            MobileScanner(
+              controller: _scannerController,
+              onDetect: (capture) {
+                final barcodes = capture.barcodes;
+                for (final barcode in barcodes) {
+                  final val = barcode.rawValue;
+                  if (val != null && val.isNotEmpty) {
+                    _handleBarcodeDetected(val);
+                    break;
+                  }
                 }
-              }
-            },
-          ),
-          Center(
-            child: SizedBox(
-              width: 270,
-              height: 270,
-              child: Stack(
+              },
+            )
+          else
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _checkingPermission
+                          ? Icons.camera_alt_outlined
+                          : Icons.no_photography_outlined,
+                      color: AppColors.senaGreen,
+                      size: 56,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      _checkingPermission
+                          ? 'Solicitando acceso a la cámara...'
+                          : 'Se requiere permiso de cámara para escanear códigos QR.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (!_checkingPermission) ...[
+                      const SizedBox(height: 16),
+                      TactileButton(
+                        text: 'Permitir Cámara',
+                        icon: Icons.camera_alt_rounded,
+                        onPressed: _requestAndStartCamera,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          if (_hasCameraPermission)
+            Center(
+              child: SizedBox(
+                width: 270,
+                height: 270,
+                child: Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.primary, width: 3),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    AnimatedBuilder(
+                      animation: _laserController,
+                      builder: (context, child) {
+                        return Positioned(
+                          top: 270 * _laserController.value,
+                          left: 10,
+                          right: 10,
+                          child: Container(
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryLight,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primaryLight.withValues(alpha: 0.8),
+                                  blurRadius: 8,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              top: false,
+              minimum: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.primary, width: 3),
-                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.black.withValues(alpha: 0.75),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.slateMuted.withValues(alpha: 0.5)),
+                    ),
+                    child: const Text(
+                      'Enfoque el código QR del arete del porcino o use el teclado superior si el arete está sucio.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
-                  AnimatedBuilder(
-                    animation: _laserController,
-                    builder: (context, child) {
-                      return Positioned(
-                        top: 270 * _laserController.value,
-                        left: 10,
-                        right: 10,
-                        child: Container(
-                          height: 3,
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryLight,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primaryLight.withValues(alpha: 0.8),
-                                blurRadius: 8,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
+                  const SizedBox(height: 12),
+                  TactileButton(
+                    text: 'Ingresar Código de Arete Manualmente',
+                    icon: Icons.keyboard_alt_outlined,
+                    type: TactileButtonType.secondary,
+                    onPressed: _showManualEntryDialog,
                   ),
                 ],
               ),
-            ),
-          ),
-          Positioned(
-            bottom: 40,
-            left: 20,
-            right: 20,
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.75),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.slateMuted.withValues(alpha: 0.5)),
-                  ),
-                  child: const Text(
-                    'Enfoque el código QR del arete del porcino o use el teclado superior si el arete está sucio.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TactileButton(
-                  text: 'Ingresar Código de Arete Manualmente',
-                  icon: Icons.keyboard_alt_outlined,
-                  type: TactileButtonType.secondary,
-                  onPressed: _showManualEntryDialog,
-                ),
-              ],
             ),
           ),
         ],

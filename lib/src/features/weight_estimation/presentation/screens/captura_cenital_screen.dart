@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:porcitech_mobile/src/core/theme/app_colors.dart';
+import 'package:porcitech_mobile/src/core/utils/camera_permission_helper.dart';
 import 'package:porcitech_mobile/src/core/widgets/tactile_button.dart';
 import 'package:porcitech_mobile/src/features/animals/domain/entities/porcino_entity.dart';
 import 'package:porcitech_mobile/src/features/weight_estimation/domain/entities/weight_record_entity.dart';
@@ -32,6 +33,10 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
 
   Future<void> _captureOrPickPhoto(ImageSource source) async {
     try {
+      if (source == ImageSource.camera) {
+        final granted = await ensureCameraPermission(context);
+        if (!granted) return;
+      }
       final XFile? photo = await _picker.pickImage(
         source: source,
         maxWidth: 1280,
@@ -319,9 +324,11 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
             right: 0,
             bottom: 0,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               color: Colors.black.withValues(alpha: 0.85),
-              child: Row(
+              child: SafeArea(
+                top: false,
+                minimum: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   IconButton(
@@ -361,6 +368,7 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
                     },
                   ),
                 ],
+                ),
               ),
             ),
           ),
