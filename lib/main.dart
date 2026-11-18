@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'src/core/di/core_providers.dart';
 import 'src/core/theme/app_theme.dart';
 import 'src/core/widgets/porcino_picker_sheet.dart';
+import 'src/core/widgets/porcitech_splash_screen.dart';
 import 'src/features/animals/domain/entities/porcino_entity.dart';
 import 'src/features/animals/presentation/controllers/animals_controller.dart';
 import 'src/features/animals/presentation/screens/detalle_porcino_4092_porcitech.dart';
@@ -45,16 +46,46 @@ Future<void> main() async {
 }
 
 /// Aplicación principal de PorciTech (Sistema Integral de Gestión Porcina SENA).
-class PorciTechApp extends ConsumerWidget {
-  const PorciTechApp({super.key});
+class PorciTechApp extends ConsumerStatefulWidget {
+  final bool showSplash;
+
+  const PorciTechApp({
+    super.key,
+    this.showSplash = true,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PorciTechApp> createState() => _PorciTechAppState();
+}
+
+class _PorciTechAppState extends ConsumerState<PorciTechApp> {
+  late bool _showingSplash = widget.showSplash;
+
+  @override
+  Widget build(BuildContext context) {
     return MaterialApp(
       title: 'SENA • PorciTech Mobile',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const RootNavigationCoordinator(),
+      home: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 450),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        transitionBuilder: (child, animation) => FadeTransition(
+          opacity: animation,
+          child: child,
+        ),
+        child: _showingSplash
+            ? PorciTechSplashScreen(
+                key: const ValueKey('splash'),
+                onComplete: () {
+                  if (mounted) {
+                    setState(() => _showingSplash = false);
+                  }
+                },
+              )
+            : const RootNavigationCoordinator(key: ValueKey('root')),
+      ),
     );
   }
 }

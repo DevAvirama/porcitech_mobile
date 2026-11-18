@@ -5,9 +5,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:porcitech_mobile/main.dart';
 import 'package:porcitech_mobile/src/core/di/core_providers.dart';
 import 'package:porcitech_mobile/src/core/widgets/brand_mark.dart';
+import 'package:porcitech_mobile/src/core/widgets/porcitech_splash_screen.dart';
 
 void main() {
-  testWidgets('Smoke test inicial de arranque SENA PorciTech Mobile', (WidgetTester tester) async {
+  testWidgets('Splash animado inicial y transición a login SENA PorciTech Mobile',
+      (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -26,6 +28,12 @@ void main() {
     );
 
     await tester.pump();
+    expect(find.byType(PorciTechSplashScreen), findsOneWidget);
+    expect(find.text('GESTIÓN PORCINA INTELIGENTE'), findsOneWidget);
+
+    // Avanza la duración del splash (1900 ms) y la transición Fade (450 ms)
+    await tester.pump(const Duration(milliseconds: 2000));
+    await tester.pump(const Duration(milliseconds: 600));
 
     // Valida identidad institucional SENA + PorciTech y pantalla de login
     expect(find.byType(BrandMark), findsOneWidget);
