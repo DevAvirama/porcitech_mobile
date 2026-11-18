@@ -48,10 +48,71 @@ class _InicioDeSesionPorcitechState
     }
   }
 
+  Future<void> _showServerConfigDialog(String currentUrl) async {
+    final uri = Uri.tryParse(currentUrl);
+    final currentHostPort = (uri != null && uri.host.isNotEmpty)
+        ? '${uri.host}:${uri.hasPort ? uri.port : 8000}'
+        : currentUrl;
+    final ctrl = TextEditingController(text: currentHostPort);
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          'Conexión con Servidor Local',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Ingresa la IP de tu laptop en la red Wi-Fi (puerto 8000):',
+              style: TextStyle(fontSize: 12.5, color: Color(0xFF475569)),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: ctrl,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(
+                hintText: 'Ej: 192.168.1.7:8000',
+                prefixIcon: Icon(Icons.dns_rounded),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await ref
+                  .read(apiBaseUrlProvider.notifier)
+                  .setServerUrl(ctrl.text);
+              if (ctx.mounted) Navigator.of(ctx).pop();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.senaGreen,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Guardar IP'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
     final isOffline = ref.watch(offlineModeProvider);
+    final currentBaseUrl = ref.watch(apiBaseUrlProvider);
+    final parsedUri = Uri.tryParse(currentBaseUrl);
+    final serverLabel = (parsedUri != null && parsedUri.host.isNotEmpty)
+        ? '${parsedUri.host}:${parsedUri.hasPort ? parsedUri.port : 8000}'
+        : currentBaseUrl;
 
     const inputFill = Color(0xFFF6F7FB);
     const offlineBg = Color(0xFFEEF9F8);
@@ -414,7 +475,28 @@ class _InicioDeSesionPorcitechState
                   ),
                   const SizedBox(height: 20),
 
-                  // --- 6. Pie de Página ---
+                  // --- 6. Selector Rápido de IP del Servidor ---
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () => _showServerConfigDialog(currentBaseUrl),
+                      icon: const Icon(
+                        Icons.wifi_tethering_rounded,
+                        size: 16,
+                        color: AppColors.senaBlue,
+                      ),
+                      label: Text(
+                        'Servidor: $serverLabel (Cambiar IP)',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.senaBlue,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // --- 7. Pie de Página ---
                   const Center(
                     child: Text(
                       'PORCITECH MOBILE • SERVICIO NACIONAL DE APRENDIZAJE (SENA)',
