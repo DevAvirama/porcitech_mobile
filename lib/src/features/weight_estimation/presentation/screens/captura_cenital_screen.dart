@@ -132,7 +132,7 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Encuadre al cerdo dentro del óvalo y ubique el marcador ArUco (DICT_4X4_100) en la esquina cian. Sin red, la foto se guarda en el dispositivo.',
+                      'Encuadre al cerdo dentro del óvalo y ubique el patrón de calibración en la esquina cian. Sin señal, la foto se guarda en el dispositivo.',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 11.5,
@@ -182,7 +182,7 @@ class _CapturaCenitalScreenState extends ConsumerState<CapturaCenitalScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'FOTOGRAFÍA GUARDADA EN DISPOSITIVO (HU20)',
+                                      'FOTOGRAFÍA GUARDADA EN DISPOSITIVO',
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w800,

@@ -143,7 +143,7 @@ class WeightRemoteDataSourceImpl implements WeightRemoteDataSource {
           persistido: data['persistido'] as bool? ?? false,
         );
       }
-      throw const ServerException('Respuesta inválida del microservicio YOLO/OpenCV.');
+      throw const ServerException('Respuesta inválida del servicio de estimación de peso.');
     } on AppException {
       rethrow;
     } catch (e) {

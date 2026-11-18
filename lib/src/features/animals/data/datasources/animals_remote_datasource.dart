@@ -294,7 +294,7 @@ class AnimalsRemoteDataSourceImpl implements AnimalsRemoteDataSource {
       if (response.data is Map<String, dynamic>) {
         return LoteModel.fromJson(response.data as Map<String, dynamic>);
       }
-      throw const ServerException('Error al crear corral en FastAPI.');
+      throw const ServerException('Error al crear el corral en el servidor.');
     } on AppException {
       rethrow;
     } catch (e) {

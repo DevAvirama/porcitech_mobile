@@ -295,7 +295,7 @@ class _RegistroDeVacunacionPorcitechState
               DropdownButtonFormField<String>(
                 initialValue: _selectedLoteUuid ?? _porcino.corralUuid ?? lotes.first.uuid,
                 decoration: const InputDecoration(
-                  labelText: 'Corral / Lote Destino (HU11)',
+                  labelText: 'Corral / Lote Destino',
                   prefixIcon: Icon(Icons.fence_rounded, color: AppColors.senaBlue),
                 ),
                 items: lotes
@@ -440,7 +440,7 @@ class _RegistroDeVacunacionPorcitechState
                 key: ValueKey('med_insumo_$selectedInsumoId'),
                 initialValue: selectedInsumoId,
                 decoration: const InputDecoration(
-                  labelText: 'Descontar de Bodega (Opcional — HU11)',
+                  labelText: 'Descontar de Bodega (Opcional)',
                   prefixIcon: Icon(Icons.inventory_2_outlined, color: AppColors.senaBlue),
                 ),
                 items: [
@@ -799,7 +799,7 @@ class _RegistroDeVacunacionPorcitechState
         padding: const EdgeInsets.all(16),
         children: [
           const Text(
-            'Checklist Diario de Bioseguridad ICA (HU15)',
+            'Checklist Diario de Bioseguridad ICA',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w800,

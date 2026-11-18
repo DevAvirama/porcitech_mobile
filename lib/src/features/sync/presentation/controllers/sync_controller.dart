@@ -130,7 +130,7 @@ class SyncNotifier extends Notifier<SyncState> {
       (count) {
         state = state.copyWith(
           isSyncing: false,
-          message: '$count registros sincronizados en orden FIFO con FastAPI.',
+          message: '$count registros sincronizados correctamente.',
           isError: false,
         );
         return true;

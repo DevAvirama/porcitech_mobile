@@ -172,7 +172,7 @@ class DioClient {
 
     final statusCode = error.response?.statusCode;
     final dynamic responseData = error.response?.data;
-    String message = 'Ocurrió un error en la comunicación con FastAPI.';
+    String message = 'Ocurrió un error al comunicarse con el servidor.';
 
     if (responseData is Map<String, dynamic>) {
       if (responseData.containsKey('detail')) {

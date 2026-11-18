@@ -153,7 +153,7 @@ class _AjustesDeCuentaPorcitechState
 
             // --- Descarga de Datos para Galpón Sin Conexión (HU34) ---
             const Text(
-              'Datos Locales para Trabajo Sin Red (HU34)',
+              'Datos Locales para Trabajo Sin Red',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -272,8 +272,8 @@ class _AjustesDeCuentaPorcitechState
                             children: [
                               Text(
                                 isOffline
-                                    ? 'Modo Offline Forzado Activado'
-                                    : 'Conectado a FastAPI REST',
+                                    ? 'Modo Sin Conexión Activado'
+                                    : 'Conectado al Servidor de Granja',
                                 style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
@@ -282,8 +282,8 @@ class _AjustesDeCuentaPorcitechState
                               ),
                               Text(
                                 isOffline
-                                    ? 'Escritura local FIFO con UUID v4'
-                                    : 'Endpoint activo: ${ApiConstants.defaultBaseUrl}',
+                                    ? 'Guardando registros en el dispositivo'
+                                    : 'Sincronización en línea activa',
                                 style: const TextStyle(
                                   fontSize: 11,
                                   color: AppColors.slateMuted,
@@ -345,7 +345,7 @@ class _AjustesDeCuentaPorcitechState
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Monitor de Sincronización (HU33)',
+                  'Monitor de Sincronización',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -435,7 +435,7 @@ class _AjustesDeCuentaPorcitechState
                     Icon(Icons.cloud_done_rounded, color: AppColors.primary, size: 36),
                     SizedBox(height: 8),
                     Text(
-                      'Todas las transacciones de campo están al día con FastAPI.',
+                      'Todos los registros de campo están sincronizados.',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 13, color: AppColors.slateMuted),
                     ),
@@ -575,7 +575,7 @@ class _AjustesDeCuentaPorcitechState
                       ),
                     ),
                     Text(
-                      '${item.method} ${item.endpoint} • UUID $shortUuid • ${DateFormat('HH:mm:ss').format(item.createdAt)}',
+                      'Ref: #$shortUuid • ${DateFormat('HH:mm:ss').format(item.createdAt)}',
                       style: const TextStyle(fontSize: 11, color: AppColors.slateMuted),
                     ),
                   ],

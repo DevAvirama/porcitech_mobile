@@ -464,8 +464,8 @@ class DashboardDeCampoPorcitech extends ConsumerWidget {
                     onTap: onOpenLotes,
                   ),
                   _buildQuickAccessCard(
-                    title: 'Sincronización Offline',
-                    description: 'Cola local y estado del servidor FastAPI',
+                    title: 'Sincronización',
+                    description: 'Registros guardados en el dispositivo y estado de red',
                     icon: Icons.cloud_sync_rounded,
                     color: AppColors.secondary,
                     onTap: onOpenAjustes,
